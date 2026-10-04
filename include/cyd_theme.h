@@ -40,8 +40,14 @@
 // Buttons
 // ====================================================
 
-#define BUTTON_WIDTH   120
-#define BUTTON_HEIGHT   30
-#define BUTTON_RADIUS    6
+#define NAV_Y           200
+
+#define NAV_LEFT_X       10
+#define NAV_CENTER_X    115
+#define NAV_RIGHT_X     220
+
+#define NAV_WIDTH        90
+#define NAV_HEIGHT       30
+
 
 #endif

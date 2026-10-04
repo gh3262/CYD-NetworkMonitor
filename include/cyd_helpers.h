@@ -135,4 +135,30 @@ inline unsigned long uptimeHours()
 {
     return millis() / 3600000;
 }
+
+inline String formatUptime()
+{
+    unsigned long totalSeconds = millis() / 1000;
+
+    unsigned long hours =
+        totalSeconds / 3600;
+
+    unsigned long minutes =
+        (totalSeconds % 3600) / 60;
+
+    unsigned long seconds =
+        totalSeconds % 60;
+
+    char buffer[16];
+
+    snprintf(
+        buffer,
+        sizeof(buffer),
+        "%02lu:%02lu:%02lu",
+        hours,
+        minutes,
+        seconds);
+
+    return String(buffer);
+}
 #endif

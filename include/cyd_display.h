@@ -27,6 +27,9 @@ inline bool initDisplay()
     backlightInit();
     if (!gfx->begin())
         return false;
+
+    gfx->invertDisplay(true);
+
     return true;
 }
 // ====================================================

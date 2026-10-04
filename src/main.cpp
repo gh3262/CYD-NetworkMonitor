@@ -8,7 +8,8 @@ const char* password = "Girraffe151!";
 enum Screen
 {
     SCREEN_STATUS,
-    SCREEN_SCAN
+    SCREEN_SCAN,
+    SCREEN_SYSTEM
 };
 
 struct AppState
@@ -29,9 +30,16 @@ void drawNetworkScreen();
 void performScan();
 void drawScanScreen();
 
+// System Screen
+void drawSystemScreen();
+
+// Diagnostics
+void colorTest();
+
 // Navigation
 void drawCurrentScreen();
 void enterScanScreen();
+void enterSystemScreen();
 
 void setup()
 {
@@ -47,6 +55,11 @@ void setup()
     showSplash("Network Monitor");
 
     connectWiFi();
+
+    //colorTest();
+    // while (true);
+    // while (true);
+
     drawCurrentScreen();
 }
 
@@ -73,48 +86,55 @@ void drawNetworkScreen()
     clearScreen(COLOR_BACKGROUND);
 
     titleBar(
-    "NETWORK MONITOR",
-    COLOR_HEADER_BG,
-    COLOR_HEADER_TEXT);
+        "NETWORK MONITOR",
+        COLOR_HEADER_BG,
+        COLOR_HEADER_TEXT);
 
     gfx->setTextSize(2);
     gfx->setTextColor(COLOR_TEXT);
 
-    gfx->setCursor(10, 50);
+    gfx->setCursor(10, 40);
     gfx->println("SSID:");
 
-    gfx->setCursor(10, 75);
+    gfx->setCursor(10, 60);
     gfx->println(WiFi.SSID());
 
-    gfx->setCursor(10, 110);
+    gfx->setCursor(10, 85);
     gfx->println("IP:");
 
-    gfx->setCursor(10, 135);
+    gfx->setCursor(10, 105);
     gfx->println(WiFi.localIP());
 
-    gfx->setCursor(10, 170);
+    gfx->setCursor(10, 135);
     gfx->print("RSSI: ");
     gfx->print(WiFi.RSSI());
     gfx->println(" dBm");
 
-    gfx->setCursor(10, 200);
+    // Kept above NAV_Y so it doesn't collide with the buttons
+    gfx->setCursor(10, 165);
     gfx->print("Uptime: ");
-    gfx->print(millis() / 1000);
-    gfx->println(" sec");
+    gfx->println(formatUptime());
 
     drawButton(
-        200,   // x
-        200,   // y
-        120,   // width
-        30,    // height
-        "Refresh");
+        NAV_LEFT_X,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT,
+        "System");
 
     drawButton(
-        200,
-        160,
-        120,
-        30,
+        NAV_CENTER_X,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT,
         "Scan");
+
+    drawButton(
+        NAV_RIGHT_X,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT,
+        "Refresh");
 }
 
 void drawCurrentScreen()
@@ -127,6 +147,10 @@ void drawCurrentScreen()
 
         case SCREEN_SCAN:
             drawScanScreen();
+            break;
+
+        case SCREEN_SYSTEM:
+            drawSystemScreen();
             break;
     }
 }
@@ -164,7 +188,7 @@ void drawScanScreen()
 
     const int lineHeight = 12;
     const int firstLineY = 50;
-    const int maxLines = (195 - firstLineY) / lineHeight;
+    const int maxLines = (NAV_Y - 5 - firstLineY) / lineHeight;
 
     for (int i = 0; i < state.networkCount && i < maxLines; i++)
     {
@@ -180,17 +204,17 @@ void drawScanScreen()
     }
 
     drawButton(
-        10,
-        200,
-        120,
-        30,
+        NAV_LEFT_X,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT,
         "Back");
 
     drawButton(
-        200,
-        200,
-        120,
-        30,
+        NAV_RIGHT_X,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT,
         "Rescan");
 }
 
@@ -202,7 +226,56 @@ void enterScanScreen()
     drawCurrentScreen();
 }
 
-unsigned long lastUpdate = 0;
+void colorTest()
+{
+    gfx->fillRect(0,   0, 80, 80, CYD_BLACK);
+    gfx->fillRect(80,  0, 80, 80, CYD_WHITE);
+    gfx->fillRect(160, 0, 80, 80, CYD_RED);
+    gfx->fillRect(240, 0, 80, 80, CYD_GREEN);
+
+    gfx->fillRect(0,   80, 80, 80, CYD_BLUE);
+    gfx->fillRect(80,  80, 80, 80, CYD_YELLOW);
+    gfx->fillRect(160, 80, 80, 80, CYD_CYAN);
+    gfx->fillRect(240, 80, 80, 80, CYD_MAGENTA);
+}
+
+void drawSystemScreen()
+{
+    clearScreen(COLOR_BACKGROUND);
+
+    titleBar("SYSTEM");
+
+    gfx->setTextColor(COLOR_TEXT);
+    gfx->setTextSize(FONT_NORMAL);
+
+    gfx->setCursor(10, 50);
+    gfx->print("Free Heap: ");
+    gfx->print(ESP.getFreeHeap() / 1024);
+    gfx->println(" KB");
+
+    gfx->setCursor(10, 80);
+    gfx->print("Light Level: ");
+    gfx->print(lightPercent());
+    gfx->println("%");
+
+    gfx->setCursor(10, 110);
+    gfx->print("Uptime: ");
+    gfx->println(formatUptime());
+    // gfx->println(" sec");
+
+    drawButton(
+        NAV_LEFT_X,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT,
+        "Back");
+}
+
+void enterSystemScreen()
+{
+    state.currentScreen = SCREEN_SYSTEM;
+    drawCurrentScreen();
+}
 
 void loop()
 {
@@ -217,31 +290,34 @@ void loop()
 
         if (state.currentScreen == SCREEN_STATUS)
         {
-            // Scan button
+            // System button
             if (touchInRect(
                     x, y,
-                    200, 160,
-                    120, 30))
+                    NAV_LEFT_X, NAV_Y,
+                    NAV_WIDTH, NAV_HEIGHT))
             {
-                Serial.println("Scan pressed");
+                enterSystemScreen();
+                delay(300);
+            }
+
+            // Scan button
+            else if (touchInRect(
+                    x, y,
+                    NAV_CENTER_X, NAV_Y,
+                    NAV_WIDTH, NAV_HEIGHT))
+            {
                 enterScanScreen();
                 delay(300);
             }
 
             // Refresh button
-            if (touchInRect(
+            else if (touchInRect(
                     x, y,
-                    200, 200,
-                    120, 30))
+                    NAV_RIGHT_X, NAV_Y,
+                    NAV_WIDTH, NAV_HEIGHT))
             {
-                Serial.println("Refresh pressed");
-
-                ledBlue();
-
                 drawCurrentScreen();
-
                 networkSignalLED(WiFi.RSSI());
-
                 delay(300);
             }
         }
@@ -250,28 +326,35 @@ void loop()
             // Back button
             if (touchInRect(
                     x, y,
-                    10, 200,
-                    120, 30))
+                    NAV_LEFT_X, NAV_Y,
+                    NAV_WIDTH, NAV_HEIGHT))
             {
-                Serial.println("Back pressed");
-
                 state.currentScreen = SCREEN_STATUS;
                 drawCurrentScreen();
-
                 delay(300);
             }
 
             // Rescan button
-            if (touchInRect(
+            else if (touchInRect(
                     x, y,
-                    200, 200,
-                    120, 30))
+                    NAV_RIGHT_X, NAV_Y,
+                    NAV_WIDTH, NAV_HEIGHT))
             {
-                Serial.println("Rescan pressed");
-
                 performScan();
                 drawCurrentScreen();
-
+                delay(300);
+            }
+        }
+        else if (state.currentScreen == SCREEN_SYSTEM)
+        {
+            // Back button
+            if (touchInRect(
+                    x, y,
+                    NAV_LEFT_X, NAV_Y,
+                    NAV_WIDTH, NAV_HEIGHT))
+            {
+                state.currentScreen = SCREEN_STATUS;
+                drawCurrentScreen();
                 delay(300);
             }
         }
