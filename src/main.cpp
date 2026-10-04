@@ -12,11 +12,20 @@ enum Screen
 };
 
 Screen currentScreen = SCREEN_STATUS;
+int networkCount = 0;
 
+// Connection
 void connectWiFi();
+
+// Status Screen
 void drawNetworkScreen();
-void drawCurrentScreen();
+
+// Scan Screen
+void performScan();
 void drawScanScreen();
+
+// Navigation
+void drawCurrentScreen();
 void enterScanScreen();
 
 void setup()
@@ -117,7 +126,7 @@ void drawCurrentScreen()
     }
 }
 
-void drawScanScreen()
+void performScan()
 {
     clearScreen(COLOR_BACKGROUND);
 
@@ -129,8 +138,11 @@ void drawScanScreen()
     gfx->setCursor(10, 50);
     gfx->println("Scanning...");
 
-    int count = WiFi.scanNetworks();
+    networkCount = WiFi.scanNetworks();
+}
 
+void drawScanScreen()
+{
     clearScreen(COLOR_BACKGROUND);
 
     titleBar("WIFI SCAN");
@@ -139,11 +151,17 @@ void drawScanScreen()
     gfx->setTextColor(COLOR_TEXT);
     gfx->setTextSize(1);
 
+    // y=25 would sit inside the 30 px title bar, so draw the count just below it
+    char buffer[32];
+    snprintf(buffer, sizeof(buffer), "Found %d networks", networkCount < 0 ? 0 : networkCount);
+    gfx->setCursor(10, 36);
+    gfx->println(buffer);
+
     const int lineHeight = 12;
-    const int firstLineY = 40;
+    const int firstLineY = 50;
     const int maxLines = (195 - firstLineY) / lineHeight;
 
-    for (int i = 0; i < count && i < maxLines; i++)
+    for (int i = 0; i < networkCount && i < maxLines; i++)
     {
         gfx->setCursor(10, firstLineY + (i * lineHeight));
 
@@ -162,10 +180,19 @@ void drawScanScreen()
         120,
         30,
         "Back");
+
+    drawButton(
+        200,
+        200,
+        120,
+        30,
+        "Rescan");
 }
 
 void enterScanScreen()
 {
+    performScan();
+
     currentScreen = SCREEN_SCAN;
     drawCurrentScreen();
 }
@@ -224,6 +251,20 @@ void loop()
                 Serial.println("Back pressed");
 
                 currentScreen = SCREEN_STATUS;
+                drawCurrentScreen();
+
+                delay(300);
+            }
+
+            // Rescan button
+            if (touchInRect(
+                    x, y,
+                    200, 200,
+                    120, 30))
+            {
+                Serial.println("Rescan pressed");
+
+                performScan();
                 drawCurrentScreen();
 
                 delay(300);
