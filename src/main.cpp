@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <algorithm>
+#include <vector>
 #include <WiFi.h>
 #include <ESP32Ping.h>
 #include "cyd.h"
@@ -18,6 +20,7 @@ struct AppState
 {
     Screen currentScreen;
     int networkCount;
+    int scanPage;
     int gatewayPingMs;
     int internetPingMs;
 };
@@ -29,7 +32,21 @@ const int PING_FAILED = -1;
 
 const char* INTERNET_PING_HOST = "8.8.8.8";
 
-AppState state = {SCREEN_STATUS, 0, PING_NOT_RUN, PING_NOT_RUN};
+AppState state = {SCREEN_STATUS, 0, 0, PING_NOT_RUN, PING_NOT_RUN};
+
+// Scan list layout
+const int SCAN_LINE_HEIGHT = 12;
+const int SCAN_FIRST_LINE_Y = 50;
+const int SCAN_ROWS_PER_PAGE = (NAV_Y - 5 - SCAN_FIRST_LINE_Y) / SCAN_LINE_HEIGHT;
+
+int scanPageCount()
+{
+    const int count = state.networkCount < 0 ? 0 : state.networkCount;
+    return (count + SCAN_ROWS_PER_PAGE - 1) / SCAN_ROWS_PER_PAGE;
+}
+
+// Scan result indices sorted by signal strength, strongest first
+std::vector<int> scanOrder;
 
 // Connection
 void connectWiFi();
@@ -214,6 +231,18 @@ void performScan()
     gfx->println("Scanning...");
 
     state.networkCount = WiFi.scanNetworks();
+    state.scanPage = 0;
+
+    scanOrder.clear();
+    for (int i = 0; i < state.networkCount; i++)
+    {
+        scanOrder.push_back(i);
+    }
+
+    std::sort(scanOrder.begin(), scanOrder.end(), [](int a, int b)
+    {
+        return WiFi.RSSI(a) > WiFi.RSSI(b);
+    });
 }
 
 void drawScanScreen()
@@ -226,19 +255,33 @@ void drawScanScreen()
     gfx->setTextColor(COLOR_TEXT);
     gfx->setTextSize(1);
 
+    const int pageCount = scanPageCount();
+
     // y=25 would sit inside the 30 px title bar, so draw the count just below it
-    char buffer[32];
-    snprintf(buffer, sizeof(buffer), "Found %d networks", state.networkCount < 0 ? 0 : state.networkCount);
+    char buffer[40];
+    if (pageCount > 1)
+    {
+        snprintf(buffer, sizeof(buffer), "Found %d networks (page %d/%d)",
+                 state.networkCount, state.scanPage + 1, pageCount);
+    }
+    else
+    {
+        snprintf(buffer, sizeof(buffer), "Found %d networks", state.networkCount < 0 ? 0 : state.networkCount);
+    }
     gfx->setCursor(10, 36);
     gfx->println(buffer);
 
-    const int lineHeight = 12;
-    const int firstLineY = 50;
-    const int maxLines = (NAV_Y - 5 - firstLineY) / lineHeight;
+    const String connectedBssid = WiFi.BSSIDstr();
+    const int firstRow = state.scanPage * SCAN_ROWS_PER_PAGE;
 
-    for (int i = 0; i < state.networkCount && i < maxLines; i++)
+    for (int row = 0; row < SCAN_ROWS_PER_PAGE && firstRow + row < (int)scanOrder.size(); row++)
     {
-        gfx->setCursor(10, firstLineY + (i * lineHeight));
+        const int i = scanOrder[firstRow + row];
+
+        gfx->setCursor(10, SCAN_FIRST_LINE_Y + (row * SCAN_LINE_HEIGHT));
+
+        const bool connected = (WiFi.status() == WL_CONNECTED) && (WiFi.BSSIDstr(i) == connectedBssid);
+        gfx->setTextColor(connected ? COLOR_OK : COLOR_TEXT);
 
         gfx->print(WiFi.SSID(i));
 
@@ -255,6 +298,16 @@ void drawScanScreen()
         NAV_WIDTH,
         NAV_HEIGHT,
         "Back");
+
+    if (pageCount > 1)
+    {
+        drawButton(
+            NAV_CENTER_X,
+            NAV_Y,
+            NAV_WIDTH,
+            NAV_HEIGHT,
+            "Next");
+    }
 
     drawButton(
         NAV_RIGHT_X,
@@ -496,6 +549,17 @@ void loop()
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 state.currentScreen = SCREEN_STATUS;
+                drawCurrentScreen();
+                delay(300);
+            }
+
+            // Next page button (only present when there is more than one page)
+            else if (scanPageCount() > 1 && touchInRect(
+                    x, y,
+                    NAV_CENTER_X, NAV_Y,
+                    NAV_WIDTH, NAV_HEIGHT))
+            {
+                state.scanPage = (state.scanPage + 1) % scanPageCount();
                 drawCurrentScreen();
                 delay(300);
             }
