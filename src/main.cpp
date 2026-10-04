@@ -68,8 +68,45 @@ void drawNetworkScreen()
     gfx->print("RSSI: ");
     gfx->print(WiFi.RSSI());
     gfx->println(" dBm");
+
+    gfx->setCursor(10, 200);
+    gfx->print("Uptime: ");
+    gfx->print(millis() / 1000);
+    gfx->println(" sec");
+
+    drawButton(
+        100,   // x
+        200,   // y
+        120,   // width
+        30,    // height
+        "Refresh");
 }
+
+unsigned long lastUpdate = 0;
 
 void loop()
 {
+    int x, y;
+
+    if (getTouch(x, y))
+    {
+        Serial.print("Touch: ");
+        Serial.print(x);
+        Serial.print(",");
+        Serial.println(y);
+
+        if (touchInRect(
+                x, y,
+                100, 200,
+                120, 30))
+        {
+            ledBlue();
+
+            drawNetworkScreen();
+
+            networkSignalLED(WiFi.RSSI());
+
+            delay(250);
+        }
+    }
 }
