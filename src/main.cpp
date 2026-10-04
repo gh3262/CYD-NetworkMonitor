@@ -17,6 +17,7 @@ void connectWiFi();
 void drawNetworkScreen();
 void drawCurrentScreen();
 void drawScanScreen();
+void enterScanScreen();
 
 void setup()
 {
@@ -123,10 +124,37 @@ void drawScanScreen()
     titleBar("WIFI SCAN");
 
     gfx->setTextColor(COLOR_TEXT);
-    gfx->setTextSize(FONT_NORMAL);
+    gfx->setTextSize(FONT_SMALL);
 
-    gfx->setCursor(10, 60);
-    gfx->println("Not implemented");
+    gfx->setCursor(10, 50);
+    gfx->println("Scanning...");
+
+    int count = WiFi.scanNetworks();
+
+    clearScreen(COLOR_BACKGROUND);
+
+    titleBar("WIFI SCAN");
+
+    // titleBar() leaves the text size at 2, so reset it for the list
+    gfx->setTextColor(COLOR_TEXT);
+    gfx->setTextSize(1);
+
+    const int lineHeight = 12;
+    const int firstLineY = 40;
+    const int maxLines = (195 - firstLineY) / lineHeight;
+
+    for (int i = 0; i < count && i < maxLines; i++)
+    {
+        gfx->setCursor(10, firstLineY + (i * lineHeight));
+
+        gfx->print(WiFi.SSID(i));
+
+        gfx->print(" ");
+
+        gfx->print(WiFi.RSSI(i));
+
+        gfx->println(" dBm");
+    }
 
     drawButton(
         10,
@@ -134,6 +162,12 @@ void drawScanScreen()
         120,
         30,
         "Back");
+}
+
+void enterScanScreen()
+{
+    currentScreen = SCREEN_SCAN;
+    drawCurrentScreen();
 }
 
 unsigned long lastUpdate = 0;
@@ -158,10 +192,7 @@ void loop()
                     120, 30))
             {
                 Serial.println("Scan pressed");
-
-                currentScreen = SCREEN_SCAN;
-                drawCurrentScreen();
-
+                enterScanScreen();
                 delay(300);
             }
 
