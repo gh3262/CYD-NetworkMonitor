@@ -31,14 +31,14 @@ inline bool initDisplay()
 // ====================================================
 // Convenience Functions
 // ====================================================
-inline void clearScreen(uint16_t color = BLACK)
+inline void clearScreen(uint16_t color = CYD_BLACK)
 {
     gfx->fillScreen(color);
 }
 inline void titleBar(
     const char *title,
-    uint16_t bgColor = BLUE,
-    uint16_t textColor = WHITE)
+    uint16_t bgColor = CYD_BLUE,
+    uint16_t textColor = CYD_WHITE)
 {
     gfx->fillRect(0, 0, 320, 30, bgColor);
     gfx->setTextColor(textColor);
@@ -49,7 +49,7 @@ inline void titleBar(
 inline void centerText(
     const char *text,
     int y,
-    uint16_t color = WHITE,
+    uint16_t color = CYD_WHITE,
     int textSize = 2)
 {
     gfx->setTextSize(textSize);
@@ -77,8 +77,8 @@ inline void drawButton(
     int w,
     int h,
     const char *label,
-    uint16_t buttonColor = GREEN,
-    uint16_t textColor = BLACK)
+    uint16_t buttonColor = CYD_GREEN,
+    uint16_t textColor = CYD_BLACK)
 {
     gfx->fillRoundRect(
         x,

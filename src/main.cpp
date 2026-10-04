@@ -49,7 +49,7 @@ void drawNetworkScreen()
 
     titleBar("NETWORK MONITOR");
 
-    gfx->setTextSize(2);
+    gfx->setTextSize(1);
     gfx->setTextColor(WHITE);
 
     gfx->setCursor(10, 50);

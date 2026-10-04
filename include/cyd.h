@@ -44,14 +44,14 @@ inline bool initCYD()
 
 inline void showSplash(
     const char* title = "ESP32 CYD",
-    uint16_t bgColor = BLACK)
+    uint16_t bgColor = CYD_BLACK)
 {
     clearScreen(bgColor);
 
     centerText(
         title,
         90,
-        WHITE,
+        CYD_WHITE,
         3);
 }
 
