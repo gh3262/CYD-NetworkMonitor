@@ -75,7 +75,7 @@ void drawNetworkScreen()
     gfx->println(" sec");
 
     drawButton(
-        100,   // x
+        200,   // x
         200,   // y
         120,   // width
         30,    // height
@@ -97,7 +97,7 @@ void loop()
 
         if (touchInRect(
                 x, y,
-                100, 200,
+                200, 200,
                 120, 30))
         {
             ledBlue();

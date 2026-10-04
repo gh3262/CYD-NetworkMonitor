@@ -60,14 +60,14 @@
 // ====================================================
 // Common Colors (RGB565)
 // ====================================================
-#define BLACK       0x0000
-#define WHITE       0xFFFF
-#define RED         0xF800
-#define GREEN       0x07E0
-#define BLUE        0x001F
-#define YELLOW      0xFFE0
-#define CYAN        0x07FF
-#define MAGENTA     0xF81F
-#define ORANGE      0xFD20
-#define GRAY        0x8410
+#define CYD_BLACK       0x0000
+#define CYD_WHITE       0xFFFF
+#define CYD_RED         0xF800
+#define CYD_GREEN       0x07E0
+#define CYD_BLUE        0x001F
+#define CYD_YELLOW      0xFFE0
+#define CYD_CYAN        0x07FF
+#define CYD_MAGENTA     0xF81F
+#define CYD_ORANGE      0xFD20
+#define CYD_GRAY        0x8410
 #endif
