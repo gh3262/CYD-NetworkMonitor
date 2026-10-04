@@ -45,12 +45,15 @@ void connectWiFi()
 
 void drawNetworkScreen()
 {
-    clearScreen(BLACK);
+    clearScreen(COLOR_BACKGROUND);
 
-    titleBar("NETWORK MONITOR");
+    titleBar(
+    "NETWORK MONITOR",
+    COLOR_HEADER_BG,
+    COLOR_HEADER_TEXT);
 
-    gfx->setTextSize(1);
-    gfx->setTextColor(WHITE);
+    gfx->setTextSize(2);
+    gfx->setTextColor(COLOR_TEXT);
 
     gfx->setCursor(10, 50);
     gfx->println("SSID:");

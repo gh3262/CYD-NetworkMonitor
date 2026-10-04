@@ -15,6 +15,7 @@
 #include "cyd_helpers.h"
 #include "cyd_display.h"
 #include "cyd_touch.h"
+#include "cyd_theme.h"
 
 // ====================================================
 // Complete Hardware Initialization
@@ -44,14 +45,14 @@ inline bool initCYD()
 
 inline void showSplash(
     const char* title = "ESP32 CYD",
-    uint16_t bgColor = CYD_BLACK)
+    uint16_t bgColor = COLOR_BACKGROUND)
 {
     clearScreen(bgColor);
 
     centerText(
         title,
         90,
-        CYD_WHITE,
+        COLOR_TEXT,
         3);
 }
 

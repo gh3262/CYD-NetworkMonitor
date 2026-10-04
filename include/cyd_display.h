@@ -3,6 +3,7 @@
 #include <Arduino_GFX_Library.h>
 #include "cyd_pins.h"
 #include "cyd_helpers.h"
+#include "cyd_theme.h"
 // ====================================================
 // Display Objects
 // ====================================================
@@ -31,14 +32,14 @@ inline bool initDisplay()
 // ====================================================
 // Convenience Functions
 // ====================================================
-inline void clearScreen(uint16_t color = CYD_BLACK)
+inline void clearScreen(uint16_t color = COLOR_BACKGROUND)
 {
     gfx->fillScreen(color);
 }
 inline void titleBar(
     const char *title,
-    uint16_t bgColor = CYD_BLUE,
-    uint16_t textColor = CYD_WHITE)
+    uint16_t bgColor = COLOR_HEADER_BG,
+    uint16_t textColor = COLOR_HEADER_TEXT)
 {
     gfx->fillRect(0, 0, 320, 30, bgColor);
     gfx->setTextColor(textColor);
@@ -49,7 +50,7 @@ inline void titleBar(
 inline void centerText(
     const char *text,
     int y,
-    uint16_t color = CYD_WHITE,
+    uint16_t color = COLOR_TEXT,
     int textSize = 2)
 {
     gfx->setTextSize(textSize);
@@ -77,8 +78,8 @@ inline void drawButton(
     int w,
     int h,
     const char *label,
-    uint16_t buttonColor = CYD_GREEN,
-    uint16_t textColor = CYD_BLACK)
+    uint16_t buttonColor = COLOR_BUTTON,
+    uint16_t textColor = COLOR_BUTTON_TEXT)
 {
     gfx->fillRoundRect(
         x,
