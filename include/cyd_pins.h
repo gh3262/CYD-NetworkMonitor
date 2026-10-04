@@ -43,7 +43,13 @@
 // ====================================================
 // Ambient Light Sensor
 // ====================================================
-#define LIGHT_ADC   34
+// Ambient light sensor
+//
+// Schematic indicates GPIO34.
+// Board testing has not confirmed a working ADC signal.
+// Currently unused.
+//
+#define LIGHT_ADC 34
 // ====================================================
 // RGB Status LED
 // Common-Anode

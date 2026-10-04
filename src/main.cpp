@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <ESP32Ping.h>
 #include "cyd.h"
 
 const char* ssid = "VirusServer_2232";
@@ -9,16 +10,21 @@ enum Screen
 {
     SCREEN_STATUS,
     SCREEN_SCAN,
-    SCREEN_SYSTEM
+    SCREEN_SYSTEM,
+    SCREEN_TOOLS
 };
 
 struct AppState
 {
     Screen currentScreen;
     int networkCount;
+    int gatewayPingMs;
 };
 
-AppState state = {SCREEN_STATUS, 0};
+const int PING_NOT_RUN = -2;
+const int PING_FAILED = -1;
+
+AppState state = {SCREEN_STATUS, 0, PING_NOT_RUN};
 
 // Connection
 void connectWiFi();
@@ -33,6 +39,11 @@ void drawScanScreen();
 // System Screen
 void drawSystemScreen();
 
+// Tools Screen
+void drawToolsScreen();
+void enterToolsScreen();
+void performGatewayPing();
+
 // Diagnostics
 void colorTest();
 
@@ -44,6 +55,31 @@ void enterSystemScreen();
 void setup()
 {
     Serial.begin(115200);
+
+    // analogReadResolution(12);
+    // analogSetAttenuation(ADC_11db);
+
+    // Serial.println("ADC test");
+
+    // while(true)
+    // {
+    //     Serial.print("34: ");
+    //     Serial.println(analogRead(34));
+    //     Serial.println("-----");
+    //     Serial.print("32: ");
+    //     Serial.println(analogRead(32));
+    //     Serial.print("33: ");
+    //     Serial.println(analogRead(33));
+    //     Serial.print("25: ");
+    //     Serial.println(analogRead(25));
+    //     Serial.print("26: ");
+    //     Serial.println(analogRead(26));
+    //     Serial.print("27: ");
+    //     Serial.println(analogRead(27));
+    //     Serial.println("-----");
+    //     //Serial.println(analogRead(34));
+    //     delay(1000);
+    // }
 
     if (!initCYD())
     {
@@ -152,6 +188,10 @@ void drawCurrentScreen()
         case SCREEN_SYSTEM:
             drawSystemScreen();
             break;
+
+        case SCREEN_TOOLS:
+            drawToolsScreen();
+            break;
     }
 }
 
@@ -253,15 +293,19 @@ void drawSystemScreen()
     gfx->print(ESP.getFreeHeap() / 1024);
     gfx->println(" KB");
 
-    gfx->setCursor(10, 80);
-    gfx->print("Light Level: ");
-    gfx->print(lightPercent());
-    gfx->println("%");
+    // gfx->setCursor(10, 80);
+    // gfx->print("Light Level: ");
+    // gfx->print(lightPercent());
+    // gfx->println("%");
 
     gfx->setCursor(10, 110);
     gfx->print("Uptime: ");
     gfx->println(formatUptime());
     // gfx->println(" sec");
+
+    // gfx->setCursor(10, 140);
+    // gfx->print("ADC34: ");
+    // gfx->println(analogRead(34));
 
     drawButton(
         NAV_LEFT_X,
@@ -269,11 +313,99 @@ void drawSystemScreen()
         NAV_WIDTH,
         NAV_HEIGHT,
         "Back");
+
+    drawButton(
+        NAV_CENTER_X,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT,
+        "Tools");
+
+    drawButton(
+        NAV_RIGHT_X,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT,
+        "Refresh");
 }
 
 void enterSystemScreen()
 {
     state.currentScreen = SCREEN_SYSTEM;
+    drawCurrentScreen();
+}
+
+void drawToolsScreen()
+{
+    clearScreen(COLOR_BACKGROUND);
+
+    titleBar("TOOLS");
+
+    gfx->setTextColor(COLOR_TEXT);
+    gfx->setTextSize(FONT_NORMAL);
+
+    gfx->setCursor(10, 50);
+    gfx->println("Gateway Ping");
+
+    gfx->setCursor(10, 80);
+    gfx->print("Gateway: ");
+    gfx->println(WiFi.gatewayIP());
+
+    gfx->setCursor(10, 110);
+    gfx->print("Result: ");
+
+    if (state.gatewayPingMs == PING_NOT_RUN)
+    {
+        gfx->println("--");
+    }
+    else if (state.gatewayPingMs == PING_FAILED)
+    {
+        gfx->setTextColor(COLOR_ERROR);
+        gfx->println("No reply");
+    }
+    else
+    {
+        gfx->setTextColor(COLOR_OK);
+        gfx->print(state.gatewayPingMs);
+        gfx->println(" ms");
+    }
+
+    drawButton(
+        NAV_LEFT_X,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT,
+        "Back");
+
+    drawButton(
+        NAV_RIGHT_X,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT,
+        "Ping");
+}
+
+void performGatewayPing()
+{
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        state.gatewayPingMs = PING_FAILED;
+        return;
+    }
+
+    if (Ping.ping(WiFi.gatewayIP(), 3))
+    {
+        state.gatewayPingMs = (int)Ping.averageTime();
+    }
+    else
+    {
+        state.gatewayPingMs = PING_FAILED;
+    }
+}
+
+void enterToolsScreen()
+{
+    state.currentScreen = SCREEN_TOOLS;
     drawCurrentScreen();
 }
 
@@ -354,6 +486,49 @@ void loop()
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 state.currentScreen = SCREEN_STATUS;
+                drawCurrentScreen();
+                delay(300);
+            }
+
+            // Tools button
+            else if (touchInRect(
+                    x, y,
+                    NAV_CENTER_X, NAV_Y,
+                    NAV_WIDTH, NAV_HEIGHT))
+            {
+                enterToolsScreen();
+                delay(300);
+            }
+
+            // Refresh button
+            else if (touchInRect(
+                    x, y,
+                    NAV_RIGHT_X, NAV_Y,
+                    NAV_WIDTH, NAV_HEIGHT))
+            {
+                drawCurrentScreen();
+                delay(300);
+            }
+        }
+        else if (state.currentScreen == SCREEN_TOOLS)
+        {
+            // Back button returns to the System screen
+            if (touchInRect(
+                    x, y,
+                    NAV_LEFT_X, NAV_Y,
+                    NAV_WIDTH, NAV_HEIGHT))
+            {
+                enterSystemScreen();
+                delay(300);
+            }
+
+            // Ping button
+            else if (touchInRect(
+                    x, y,
+                    NAV_RIGHT_X, NAV_Y,
+                    NAV_WIDTH, NAV_HEIGHT))
+            {
+                performGatewayPing();
                 drawCurrentScreen();
                 delay(300);
             }
