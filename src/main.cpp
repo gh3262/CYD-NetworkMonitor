@@ -19,12 +19,17 @@ struct AppState
     Screen currentScreen;
     int networkCount;
     int gatewayPingMs;
+    int internetPingMs;
 };
 
+const int PING_RUNNING = -3;
+const int PING_SLOW_MS = 100;
 const int PING_NOT_RUN = -2;
 const int PING_FAILED = -1;
 
-AppState state = {SCREEN_STATUS, 0, PING_NOT_RUN};
+const char* INTERNET_PING_HOST = "8.8.8.8";
+
+AppState state = {SCREEN_STATUS, 0, PING_NOT_RUN, PING_NOT_RUN};
 
 // Connection
 void connectWiFi();
@@ -43,6 +48,7 @@ void drawSystemScreen();
 void drawToolsScreen();
 void enterToolsScreen();
 void performGatewayPing();
+void performInternetPing();
 
 // Diagnostics
 void colorTest();
@@ -335,6 +341,33 @@ void enterSystemScreen()
     drawCurrentScreen();
 }
 
+void drawPingResult(int pingMs)
+{
+    if (pingMs == PING_NOT_RUN)
+    {
+        gfx->setTextColor(COLOR_TEXT);
+        gfx->println("--");
+    }
+    else if (pingMs == PING_RUNNING)
+    {
+        gfx->setTextColor(COLOR_WARNING);
+        gfx->println("Pinging...");
+    }
+    else if (pingMs == PING_FAILED)
+    {
+        gfx->setTextColor(COLOR_ERROR);
+        gfx->println("No reply");
+    }
+    else
+    {
+        gfx->setTextColor(pingMs > PING_SLOW_MS ? COLOR_WARNING : COLOR_OK);
+        gfx->print(pingMs);
+        gfx->println(" ms");
+    }
+
+    gfx->setTextColor(COLOR_TEXT);
+}
+
 void drawToolsScreen()
 {
     clearScreen(COLOR_BACKGROUND);
@@ -344,31 +377,26 @@ void drawToolsScreen()
     gfx->setTextColor(COLOR_TEXT);
     gfx->setTextSize(FONT_NORMAL);
 
-    gfx->setCursor(10, 50);
-    gfx->println("Gateway Ping");
-
-    gfx->setCursor(10, 80);
-    gfx->print("Gateway: ");
+    gfx->setCursor(10, 42);
+    gfx->print("Gateway ");
     gfx->println(WiFi.gatewayIP());
 
-    gfx->setCursor(10, 110);
-    gfx->print("Result: ");
+    gfx->setCursor(10, 62);
+    gfx->print("Ping: ");
+    drawPingResult(state.gatewayPingMs);
 
-    if (state.gatewayPingMs == PING_NOT_RUN)
-    {
-        gfx->println("--");
-    }
-    else if (state.gatewayPingMs == PING_FAILED)
-    {
-        gfx->setTextColor(COLOR_ERROR);
-        gfx->println("No reply");
-    }
-    else
-    {
-        gfx->setTextColor(COLOR_OK);
-        gfx->print(state.gatewayPingMs);
-        gfx->println(" ms");
-    }
+    gfx->setCursor(10, 92);
+    gfx->print("Internet ");
+    gfx->println(INTERNET_PING_HOST);
+
+    gfx->setCursor(10, 112);
+    gfx->print("Ping: ");
+    drawPingResult(state.internetPingMs);
+
+    gfx->setCursor(10, 150);
+    gfx->print("RSSI: ");
+    gfx->print(WiFi.RSSI());
+    gfx->println(" dBm");
 
     drawButton(
         NAV_LEFT_X,
@@ -385,24 +413,30 @@ void drawToolsScreen()
         "Ping");
 }
 
-void performGatewayPing()
+int pingHost(const IPAddress& host)
 {
     if (WiFi.status() != WL_CONNECTED)
     {
-        state.gatewayPingMs = PING_FAILED;
-        return;
+        return PING_FAILED;
     }
 
-    if (Ping.ping(WiFi.gatewayIP(), 3))
+    if (Ping.ping(host, 3))
     {
-        state.gatewayPingMs = (int)Ping.averageTime();
+        return (int)Ping.averageTime();
     }
-    else
-    {
-        state.gatewayPingMs = PING_FAILED;
-    }
+
+    return PING_FAILED;
 }
 
+void performGatewayPing()
+{
+    state.gatewayPingMs = pingHost(WiFi.gatewayIP());
+}
+
+void performInternetPing()
+{
+    state.internetPingMs = pingHost(IPAddress(8, 8, 8, 8));
+}
 void enterToolsScreen()
 {
     state.currentScreen = SCREEN_TOOLS;
@@ -528,7 +562,12 @@ void loop()
                     NAV_RIGHT_X, NAV_Y,
                     NAV_WIDTH, NAV_HEIGHT))
             {
+                state.gatewayPingMs = PING_RUNNING;
+                state.internetPingMs = PING_RUNNING;
+                drawCurrentScreen();
+
                 performGatewayPing();
+                performInternetPing();
                 drawCurrentScreen();
                 delay(300);
             }
