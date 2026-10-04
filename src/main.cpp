@@ -11,8 +11,13 @@ enum Screen
     SCREEN_SCAN
 };
 
-Screen currentScreen = SCREEN_STATUS;
-int networkCount = 0;
+struct AppState
+{
+    Screen currentScreen;
+    int networkCount;
+};
+
+AppState state = {SCREEN_STATUS, 0};
 
 // Connection
 void connectWiFi();
@@ -114,7 +119,7 @@ void drawNetworkScreen()
 
 void drawCurrentScreen()
 {
-    switch (currentScreen)
+    switch (state.currentScreen)
     {
         case SCREEN_STATUS:
             drawNetworkScreen();
@@ -138,7 +143,7 @@ void performScan()
     gfx->setCursor(10, 50);
     gfx->println("Scanning...");
 
-    networkCount = WiFi.scanNetworks();
+    state.networkCount = WiFi.scanNetworks();
 }
 
 void drawScanScreen()
@@ -153,7 +158,7 @@ void drawScanScreen()
 
     // y=25 would sit inside the 30 px title bar, so draw the count just below it
     char buffer[32];
-    snprintf(buffer, sizeof(buffer), "Found %d networks", networkCount < 0 ? 0 : networkCount);
+    snprintf(buffer, sizeof(buffer), "Found %d networks", state.networkCount < 0 ? 0 : state.networkCount);
     gfx->setCursor(10, 36);
     gfx->println(buffer);
 
@@ -161,7 +166,7 @@ void drawScanScreen()
     const int firstLineY = 50;
     const int maxLines = (195 - firstLineY) / lineHeight;
 
-    for (int i = 0; i < networkCount && i < maxLines; i++)
+    for (int i = 0; i < state.networkCount && i < maxLines; i++)
     {
         gfx->setCursor(10, firstLineY + (i * lineHeight));
 
@@ -193,7 +198,7 @@ void enterScanScreen()
 {
     performScan();
 
-    currentScreen = SCREEN_SCAN;
+    state.currentScreen = SCREEN_SCAN;
     drawCurrentScreen();
 }
 
@@ -210,7 +215,7 @@ void loop()
         Serial.print(",");
         Serial.println(y);
 
-        if (currentScreen == SCREEN_STATUS)
+        if (state.currentScreen == SCREEN_STATUS)
         {
             // Scan button
             if (touchInRect(
@@ -240,7 +245,7 @@ void loop()
                 delay(300);
             }
         }
-        else if (currentScreen == SCREEN_SCAN)
+        else if (state.currentScreen == SCREEN_SCAN)
         {
             // Back button
             if (touchInRect(
@@ -250,7 +255,7 @@ void loop()
             {
                 Serial.println("Back pressed");
 
-                currentScreen = SCREEN_STATUS;
+                state.currentScreen = SCREEN_STATUS;
                 drawCurrentScreen();
 
                 delay(300);
