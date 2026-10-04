@@ -152,27 +152,62 @@ void drawNetworkScreen()
     gfx->setTextSize(2);
     gfx->setTextColor(COLOR_TEXT);
 
-    gfx->setCursor(10, 40);
+    gfx->setCursor(10, 36);
     gfx->println("SSID:");
 
-    gfx->setCursor(10, 60);
+    gfx->setCursor(10, 52);
     gfx->println(WiFi.SSID());
 
-    gfx->setCursor(10, 85);
+    gfx->setCursor(10, 74);
     gfx->println("IP:");
 
-    gfx->setCursor(10, 105);
+    gfx->setCursor(10, 90);
     gfx->println(WiFi.localIP());
 
-    gfx->setCursor(10, 135);
+    gfx->setCursor(10, 114);
     gfx->print("RSSI: ");
-    gfx->print(WiFi.RSSI());
-    gfx->println(" dBm");
 
-    // Kept above NAV_Y so it doesn't collide with the buttons
-    gfx->setCursor(10, 165);
+    const int rssi = WiFi.RSSI();
+    if (rssi > -65)
+        gfx->setTextColor(COLOR_OK);
+    else if (rssi > -80)
+        gfx->setTextColor(COLOR_WARNING);
+    else
+        gfx->setTextColor(COLOR_ERROR);
+
+    gfx->print(rssi);
+    gfx->println(" dBm");
+    gfx->setTextColor(COLOR_TEXT);
+
+    gfx->setCursor(10, 138);
     gfx->print("Uptime: ");
     gfx->println(formatUptime());
+
+    // Kept above NAV_Y so it doesn't collide with the buttons
+    gfx->setCursor(10, 162);
+    gfx->print("Health: ");
+
+    if (state.internetPingMs == PING_NOT_RUN && state.gatewayPingMs == PING_NOT_RUN)
+    {
+        gfx->println("--");
+    }
+    else if (state.internetPingMs >= 0)
+    {
+        gfx->setTextColor(COLOR_OK);
+        gfx->println("ONLINE");
+    }
+    else if (state.gatewayPingMs >= 0)
+    {
+        gfx->setTextColor(COLOR_WARNING);
+        gfx->println("LOCAL ONLY");
+    }
+    else
+    {
+        gfx->setTextColor(COLOR_ERROR);
+        gfx->println("OFFLINE");
+    }
+
+    gfx->setTextColor(COLOR_TEXT);
 
     drawButton(
         NAV_LEFT_X,
