@@ -4,9 +4,10 @@
 #include <WiFi.h>
 #include <ESP32Ping.h>
 #include "cyd.h"
+#include "credentials.h"
 
-const char* ssid = "VirusServer_2232";
-const char* password = "Girraffe151!";
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASSWORD;
 
 enum Screen
 {
@@ -115,6 +116,8 @@ void setup()
 
     connectWiFi();
 
+    syncTime();
+
     //colorTest();
     // while (true);
     // while (true);
@@ -148,6 +151,14 @@ void drawNetworkScreen()
         "NETWORK MONITOR",
         COLOR_HEADER_BG,
         COLOR_HEADER_TEXT);
+
+    // gfx->setTextSize(1);
+    // gfx->setTextColor(COLOR_WARNING);
+
+    // gfx->setCursor(195, 10);
+    // gfx->println(currentTimeString());
+    // gfx->setCursor(255, 10);
+    // gfx->println(currentDateString());
 
     gfx->setTextSize(2);
     gfx->setTextColor(COLOR_TEXT);
@@ -534,6 +545,14 @@ void enterToolsScreen()
 void loop()
 {
     int x, y;
+
+    static unsigned long lastClockUpdate = 0;
+
+    if (millis() - lastClockUpdate > 15000)
+    {
+        drawClock();
+        lastClockUpdate = millis();
+    }
 
     if (getTouch(x, y))
     {

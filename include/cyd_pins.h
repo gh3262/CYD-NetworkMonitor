@@ -76,4 +76,8 @@
 #define CYD_MAGENTA     0xF81F
 #define CYD_ORANGE      0xFD20
 #define CYD_GRAY        0x8410
+#define CYD_PINK        0xF81F
+#define CYD_BROWN       0xA145
+#define CYD_PURPLE      0x8010
+#define CYD_NAVY        0x000F
 #endif

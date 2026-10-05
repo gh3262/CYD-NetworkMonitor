@@ -7,9 +7,9 @@
 // Colors
 // ====================================================
 
-#define COLOR_BACKGROUND   CYD_BLACK
+#define COLOR_BACKGROUND   CYD_NAVY
 #define COLOR_TEXT         CYD_WHITE
-#define COLOR_HEADER_BG    CYD_BLUE
+#define COLOR_HEADER_BG    CYD_BROWN
 #define COLOR_HEADER_TEXT  CYD_WHITE
 
 #define COLOR_OK           CYD_GREEN

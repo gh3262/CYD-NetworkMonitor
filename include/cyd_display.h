@@ -4,6 +4,7 @@
 #include "cyd_pins.h"
 #include "cyd_helpers.h"
 #include "cyd_theme.h"
+#include "cyd_time.h"
 // ====================================================
 // Display Objects
 // ====================================================
@@ -39,6 +40,25 @@ inline void clearScreen(uint16_t color = COLOR_BACKGROUND)
 {
     gfx->fillScreen(color);
 }
+
+inline void drawClock()
+{
+    gfx->setTextSize(1);
+    gfx->setTextColor(COLOR_HEADER_TEXT);
+
+    // Clear only the clock area
+    gfx->fillRect(
+        245,
+        5,
+        70,
+        25,
+        COLOR_HEADER_BG);
+
+    gfx->setCursor(248, 5);
+    gfx->print(currentDateString());
+    gfx->setCursor(248, 15);
+    gfx->print(currentTimeString());
+}
 inline void titleBar(
     const char *title,
     uint16_t bgColor = COLOR_HEADER_BG,
@@ -49,7 +69,11 @@ inline void titleBar(
     gfx->setTextSize(2);
     gfx->setCursor(5, 8);
     gfx->print(title);
+
+    drawClock();
 }
+
+
 inline void centerText(
     const char *text,
     int y,

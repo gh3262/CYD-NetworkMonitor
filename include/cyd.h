@@ -16,6 +16,7 @@
 #include "cyd_display.h"
 #include "cyd_touch.h"
 #include "cyd_theme.h"
+#include "cyd_time.h"
 
 // ====================================================
 // Complete Hardware Initialization
