@@ -5,6 +5,9 @@
 #include <ESP32Ping.h>
 #include "cyd.h"
 #include "credentials.h"
+#include <Fonts/FreeMono9pt7b.h>
+#include <Fonts/FreeSans9pt7b.h>
+
 
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
@@ -293,6 +296,7 @@ void performScan()
 
 void drawScanScreen()
 {
+   
     clearScreen(COLOR_BACKGROUND);
 
     titleBar("WIFI SCAN");
@@ -300,6 +304,7 @@ void drawScanScreen()
     // titleBar() leaves the text size at 2, so reset it for the list
     gfx->setTextColor(COLOR_TEXT);
     gfx->setTextSize(1);
+    // gfx->setFont(&FreeSans9pt7b); 
 
     const int pageCount = scanPageCount();
 
@@ -337,6 +342,7 @@ void drawScanScreen()
 
         gfx->println(" dBm");
     }
+    gfx->setFont(); // Reset to default font
 
     drawButton(
         NAV_LEFT_X,
@@ -546,13 +552,27 @@ void loop()
 {
     int x, y;
 
-    static unsigned long lastClockUpdate = 0;
+    // static unsigned long lastClockUpdate = 0;
 
-    if (millis() - lastClockUpdate > 15000)
+    // if (millis() - lastClockUpdate > 15000)
+    // {
+    //     drawClock();
+    //     lastClockUpdate = millis();
+    // }
+
+    static int lastMinute = -1;
+
+struct tm timeinfo;
+
+if (getLocalTime(&timeinfo))
+{
+    if (timeinfo.tm_min != lastMinute)
     {
         drawClock();
-        lastClockUpdate = millis();
+
+        lastMinute = timeinfo.tm_min;
     }
+}
 
     if (getTouch(x, y))
     {
