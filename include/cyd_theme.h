@@ -45,14 +45,26 @@
 // Buttons
 // ====================================================
 
+// #define NAV_Y           200
+
+// #define NAV_LEFT_X       10
+// #define NAV_CENTER_X    115
+// #define NAV_RIGHT_X     220
+
+// #define NAV_WIDTH        90
+// #define NAV_HEIGHT       30
+
+#define NAV_BUTTONS 4
+
 #define NAV_Y           200
+#define NAV_X1  2
+#define NAV_X2  81
+#define NAV_X3 160
+#define NAV_X4 239
 
-#define NAV_LEFT_X       10
-#define NAV_CENTER_X    115
-#define NAV_RIGHT_X     220
+#define NAV_WIDTH   78
+#define NAV_HEIGHT  30
 
-#define NAV_WIDTH        90
-#define NAV_HEIGHT       30
 
 
 #endif

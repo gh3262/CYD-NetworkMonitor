@@ -166,7 +166,7 @@ void drawNetworkScreen()
     // gfx->setCursor(255, 10);
     // gfx->println(currentDateString());
 
-    gfx->setFont(FONT_SANS_SMALL);
+    setBodyFont();
     gfx->setTextSize(1);
     gfx->setTextColor(COLOR_TEXT);
 
@@ -229,29 +229,12 @@ void drawNetworkScreen()
     }
 
     gfx->setTextColor(COLOR_TEXT);
-    gfx->setFont();
+    setDefaultFont();
     gfx->setTextSize(2);
 
-    drawButton(
-        NAV_LEFT_X,
-        NAV_Y,
-        NAV_WIDTH,
-        NAV_HEIGHT,
-        "System");
-
-    drawButton(
-        NAV_CENTER_X,
-        NAV_Y,
-        NAV_WIDTH,
-        NAV_HEIGHT,
-        "Scan");
-
-    drawButton(
-        NAV_RIGHT_X,
-        NAV_Y,
-        NAV_WIDTH,
-        NAV_HEIGHT,
-        "Refresh");
+    drawNav1("System");
+    drawNav2("Scan");
+    drawNav3("Refresh");
 }
 
 void drawCurrentScreen()
@@ -310,10 +293,9 @@ void drawScanScreen()
 
     titleBar("WIFI SCAN");
 
-    // titleBar() leaves the text size at 2, so reset it for the list
+    setDefaultFont();
     gfx->setTextColor(COLOR_TEXT);
     gfx->setTextSize(1);
-    // gfx->setFont(&FreeSans9pt7b); 
 
     const int pageCount = scanPageCount();
 
@@ -351,31 +333,16 @@ void drawScanScreen()
 
         gfx->println(" dBm");
     }
-    gfx->setFont(); // Reset to default font
+    setDefaultFont();
 
-    drawButton(
-        NAV_LEFT_X,
-        NAV_Y,
-        NAV_WIDTH,
-        NAV_HEIGHT,
-        "Back");
+    drawNav1("Back");
 
     if (pageCount > 1)
     {
-        drawButton(
-            NAV_CENTER_X,
-            NAV_Y,
-            NAV_WIDTH,
-            NAV_HEIGHT,
-            "Next");
+        drawNav2("Next");
     }
 
-    drawButton(
-        NAV_RIGHT_X,
-        NAV_Y,
-        NAV_WIDTH,
-        NAV_HEIGHT,
-        "Rescan");
+    drawNav3("Rescan");
 }
 
 void enterScanScreen()
@@ -405,7 +372,7 @@ void drawSystemScreen()
 
     titleBar("SYSTEM");
 
-    gfx->setFont(FONT_SANS_SMALL);
+    setBodyFont();
     gfx->setTextColor(COLOR_TEXT);
 
     gfx->setCursor(10, 59);
@@ -434,26 +401,30 @@ void drawSystemScreen()
     // gfx->print("ADC34: ");
     // gfx->println(analogRead(34));
 
-    drawButton(
-        NAV_LEFT_X,
-        NAV_Y,
-        NAV_WIDTH,
-        NAV_HEIGHT,
-        "Back");
+    // drawButton(
+    //     NAV_LEFT_X,
+    //     NAV_Y,
+    //     NAV_WIDTH,
+    //     NAV_HEIGHT,
+    //     "Back");
 
-    drawButton(
-        NAV_CENTER_X,
-        NAV_Y,
-        NAV_WIDTH,
-        NAV_HEIGHT,
-        "Tools");
+    // drawButton(
+    //     NAV_CENTER_X,
+    //     NAV_Y,
+    //     NAV_WIDTH,
+    //     NAV_HEIGHT,
+    //     "Tools");
 
-    drawButton(
-        NAV_RIGHT_X,
-        NAV_Y,
-        NAV_WIDTH,
-        NAV_HEIGHT,
-        "Refresh");
+    // drawButton(
+    //     NAV_RIGHT_X,
+    //     NAV_Y,
+    //     NAV_WIDTH,
+    //     NAV_HEIGHT,
+    //     "Refresh");
+
+    drawNav1("Back");
+    drawNav2("Tools");
+    drawNav3("Refresh");
 }
 
 void enterSystemScreen()
@@ -495,7 +466,7 @@ void drawToolsScreen()
 
     titleBar("TOOLS");
 
-    gfx->setFont(FONT_SANS_SMALL);
+    setBodyFont();
     gfx->setTextColor(COLOR_TEXT);
 
     gfx->setCursor(10, 51);
@@ -519,19 +490,8 @@ void drawToolsScreen()
     gfx->print(WiFi.RSSI());
     gfx->println(" dBm");
 
-    drawButton(
-        NAV_LEFT_X,
-        NAV_Y,
-        NAV_WIDTH,
-        NAV_HEIGHT,
-        "Back");
-
-    drawButton(
-        NAV_RIGHT_X,
-        NAV_Y,
-        NAV_WIDTH,
-        NAV_HEIGHT,
-        "Ping");
+    drawNav1("Back");
+    drawNav3("Ping");
 }
 
 int pingHost(const IPAddress& host)
@@ -602,7 +562,7 @@ if (getLocalTime(&timeinfo))
             // System button
             if (touchInRect(
                     x, y,
-                    NAV_LEFT_X, NAV_Y,
+                    NAV_X1, NAV_Y,
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 enterSystemScreen();
@@ -612,7 +572,7 @@ if (getLocalTime(&timeinfo))
             // Scan button
             else if (touchInRect(
                     x, y,
-                    NAV_CENTER_X, NAV_Y,
+                    NAV_X2, NAV_Y,
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 enterScanScreen();
@@ -622,7 +582,7 @@ if (getLocalTime(&timeinfo))
             // Refresh button
             else if (touchInRect(
                     x, y,
-                    NAV_RIGHT_X, NAV_Y,
+                    NAV_X3, NAV_Y,
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 drawCurrentScreen();
@@ -635,7 +595,7 @@ if (getLocalTime(&timeinfo))
             // Back button
             if (touchInRect(
                     x, y,
-                    NAV_LEFT_X, NAV_Y,
+                    NAV_X1, NAV_Y,
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 state.currentScreen = SCREEN_STATUS;
@@ -646,7 +606,7 @@ if (getLocalTime(&timeinfo))
             // Next page button (only present when there is more than one page)
             else if (scanPageCount() > 1 && touchInRect(
                     x, y,
-                    NAV_CENTER_X, NAV_Y,
+                    NAV_X2, NAV_Y,
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 state.scanPage = (state.scanPage + 1) % scanPageCount();
@@ -657,7 +617,7 @@ if (getLocalTime(&timeinfo))
             // Rescan button
             else if (touchInRect(
                     x, y,
-                    NAV_RIGHT_X, NAV_Y,
+                    NAV_X3, NAV_Y,
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 performScan();
@@ -670,7 +630,7 @@ if (getLocalTime(&timeinfo))
             // Back button
             if (touchInRect(
                     x, y,
-                    NAV_LEFT_X, NAV_Y,
+                    NAV_X1, NAV_Y,
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 state.currentScreen = SCREEN_STATUS;
@@ -681,7 +641,7 @@ if (getLocalTime(&timeinfo))
             // Tools button
             else if (touchInRect(
                     x, y,
-                    NAV_CENTER_X, NAV_Y,
+                    NAV_X2, NAV_Y,
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 enterToolsScreen();
@@ -691,7 +651,7 @@ if (getLocalTime(&timeinfo))
             // Refresh button
             else if (touchInRect(
                     x, y,
-                    NAV_RIGHT_X, NAV_Y,
+                    NAV_X3, NAV_Y,
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 drawCurrentScreen();
@@ -703,7 +663,7 @@ if (getLocalTime(&timeinfo))
             // Back button returns to the System screen
             if (touchInRect(
                     x, y,
-                    NAV_LEFT_X, NAV_Y,
+                    NAV_X1, NAV_Y,
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 enterSystemScreen();
@@ -713,7 +673,7 @@ if (getLocalTime(&timeinfo))
             // Ping button
             else if (touchInRect(
                     x, y,
-                    NAV_RIGHT_X, NAV_Y,
+                    NAV_X3, NAV_Y,
                     NAV_WIDTH, NAV_HEIGHT))
             {
                 state.gatewayPingMs = PING_RUNNING;

@@ -43,8 +43,24 @@ inline void clearScreen(uint16_t color = COLOR_BACKGROUND)
     gfx->fillScreen(color);
 }
 
+inline void setBodyFont()
+{
+    gfx->setFont(FONT_SANS_SMALL);
+}
+
+inline void setHeaderFont()
+{
+    gfx->setFont(FONT_SANS_NORMAL);
+}
+
+inline void setDefaultFont()
+{
+    gfx->setFont();
+}
+
 inline void drawClock()
 {
+    setDefaultFont();
     gfx->setTextSize(1);
     gfx->setTextColor(COLOR_HEADER_TEXT);
 
@@ -67,29 +83,14 @@ inline void titleBar(
     uint16_t textColor = COLOR_HEADER_TEXT)
 {
     gfx->fillRect(0, 0, 320, 30, bgColor);
-    gfx->setFont(FONT_SANS_NORMAL);
+    setHeaderFont();
     gfx->setTextColor(textColor);
     gfx->setTextSize(1);
     gfx->setCursor(5, 22);
     gfx->print(title);
 
-    gfx->setFont();
+    setDefaultFont();
     drawClock();
-}
-
-inline void setBodyFont()
-{
-    gfx->setFont(FONT_SANS_SMALL);
-}
-
-inline void setHeaderFont()
-{
-    gfx->setFont(FONT_SANS_NORMAL);
-}
-
-inline void setDefaultFont()
-{
-    gfx->setFont();
 }
 
 inline void centerText(
@@ -114,6 +115,7 @@ inline void centerText(
     gfx->setCursor(x, y - y1);
     gfx->print(text);
 }
+
 // ====================================================
 // Simple Button
 // ====================================================
@@ -133,7 +135,7 @@ inline void drawButton(
         h,
         6,
         buttonColor);
-    gfx->setFont(FONT_SANS_SMALL);
+    setBodyFont();
     gfx->setTextColor(textColor);
     gfx->setTextSize(1);
     int16_t x1, y1;
@@ -150,9 +152,34 @@ inline void drawButton(
         x + (w - tw) / 2 - x1,
         y + (h - th) / 2 - y1);
     gfx->print(label);
-    gfx->setFont();
+    setDefaultFont();
     gfx->setTextSize(2);
 }
+
+// ====================================================
+// Navigation Buttons
+// ====================================================
+
+inline void drawNav1(const char *label)
+{
+    drawButton(NAV_X1, NAV_Y, NAV_WIDTH, NAV_HEIGHT, label);
+}
+
+inline void drawNav2(const char *label)
+{
+    drawButton(NAV_X2, NAV_Y, NAV_WIDTH, NAV_HEIGHT, label);
+}
+
+inline void drawNav3(const char *label)
+{
+    drawButton(NAV_X3, NAV_Y, NAV_WIDTH, NAV_HEIGHT, label);
+}
+
+inline void drawNav4(const char *label)
+{
+    drawButton(NAV_X4, NAV_Y, NAV_WIDTH, NAV_HEIGHT, label);
+}
+
 inline bool pointInButton(
     int touchX,
     int touchY,
