@@ -50,11 +50,14 @@ inline void showSplash(
 {
     clearScreen(bgColor);
 
+    gfx->setFont(FONT_SANS_SMALL);
     centerText(
         title,
         90,
         COLOR_TEXT,
-        3);
+        1);
+    gfx->setFont();
+    gfx->setTextSize(1);
 }
 
 // ====================================================

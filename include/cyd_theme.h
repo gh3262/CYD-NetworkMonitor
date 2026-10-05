@@ -26,6 +26,11 @@
 #define FONT_SMALL   1
 #define FONT_NORMAL  2
 #define FONT_LARGE   3
+#define FONT_SANS_SMALL (&FreeSans9pt7b)
+#define FONT_SANS_NORMAL (&FreeSans12pt7b)
+#define FONT_SANS_LARGE (&FreeSans18pt7b)
+#define FONT_MONO_SMALL (&FreeMono9pt7b)
+#define FONT_MONO_NORMAL (&FreeMono12pt7b)
 
 // ====================================================
 // Screen Layout

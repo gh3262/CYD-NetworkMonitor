@@ -1,6 +1,8 @@
 #ifndef CYD_DISPLAY_H
 #define CYD_DISPLAY_H
 #include <Arduino_GFX_Library.h>
+#include <Fonts/FreeSans9pt7b.h>
+#include <Fonts/FreeSans12pt7b.h>
 #include "cyd_pins.h"
 #include "cyd_helpers.h"
 #include "cyd_theme.h"
@@ -65,14 +67,30 @@ inline void titleBar(
     uint16_t textColor = COLOR_HEADER_TEXT)
 {
     gfx->fillRect(0, 0, 320, 30, bgColor);
+    gfx->setFont(FONT_SANS_NORMAL);
     gfx->setTextColor(textColor);
-    gfx->setTextSize(2);
-    gfx->setCursor(5, 8);
+    gfx->setTextSize(1);
+    gfx->setCursor(5, 22);
     gfx->print(title);
 
+    gfx->setFont();
     drawClock();
 }
 
+inline void setBodyFont()
+{
+    gfx->setFont(FONT_SANS_SMALL);
+}
+
+inline void setHeaderFont()
+{
+    gfx->setFont(FONT_SANS_NORMAL);
+}
+
+inline void setDefaultFont()
+{
+    gfx->setFont();
+}
 
 inline void centerText(
     const char *text,
@@ -92,8 +110,8 @@ inline void centerText(
         &y1,
         &w,
         &h);
-    int x = (320 - w) / 2;
-    gfx->setCursor(x, y);
+    int x = (320 - w) / 2 - x1;
+    gfx->setCursor(x, y - y1);
     gfx->print(text);
 }
 // ====================================================
@@ -115,8 +133,9 @@ inline void drawButton(
         h,
         6,
         buttonColor);
+    gfx->setFont(FONT_SANS_SMALL);
     gfx->setTextColor(textColor);
-    gfx->setTextSize(2);
+    gfx->setTextSize(1);
     int16_t x1, y1;
     uint16_t tw, th;
     gfx->getTextBounds(
@@ -128,9 +147,11 @@ inline void drawButton(
         &tw,
         &th);
     gfx->setCursor(
-        x + (w - tw) / 2,
-        y + (h - th) / 2 + 2);
+        x + (w - tw) / 2 - x1,
+        y + (h - th) / 2 - y1);
     gfx->print(label);
+    gfx->setFont();
+    gfx->setTextSize(2);
 }
 inline bool pointInButton(
     int touchX,

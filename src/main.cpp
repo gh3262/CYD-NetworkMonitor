@@ -7,6 +7,8 @@
 #include "credentials.h"
 #include <Fonts/FreeMono9pt7b.h>
 #include <Fonts/FreeSans9pt7b.h>
+#include <Fonts/FreeSans12pt7b.h>
+#include <Fonts/FreeSans18pt7b.h>
 
 
 const char* ssid = WIFI_SSID;
@@ -115,7 +117,7 @@ void setup()
         }
     }
 
-    showSplash("Network Monitor");
+    showSplash("Network Status");
 
     connectWiFi();
 
@@ -151,7 +153,7 @@ void drawNetworkScreen()
     clearScreen(COLOR_BACKGROUND);
 
     titleBar(
-        "NETWORK MONITOR",
+        "NETWORK STATUS",
         COLOR_HEADER_BG,
         COLOR_HEADER_TEXT);
 
@@ -163,22 +165,23 @@ void drawNetworkScreen()
     // gfx->setCursor(255, 10);
     // gfx->println(currentDateString());
 
-    gfx->setTextSize(2);
+    gfx->setFont(FONT_SANS_SMALL);
+    gfx->setTextSize(1);
     gfx->setTextColor(COLOR_TEXT);
 
-    gfx->setCursor(10, 36);
+    gfx->setCursor(10, 45);
     gfx->println("SSID:");
 
-    gfx->setCursor(10, 52);
+    gfx->setCursor(15, 61);
     gfx->println(WiFi.SSID());
 
-    gfx->setCursor(10, 74);
+    gfx->setCursor(10, 83);
     gfx->println("IP:");
 
-    gfx->setCursor(10, 90);
+    gfx->setCursor(15, 99);
     gfx->println(WiFi.localIP());
 
-    gfx->setCursor(10, 114);
+    gfx->setCursor(10, 123);
     gfx->print("RSSI: ");
 
     const int rssi = WiFi.RSSI();
@@ -193,12 +196,12 @@ void drawNetworkScreen()
     gfx->println(" dBm");
     gfx->setTextColor(COLOR_TEXT);
 
-    gfx->setCursor(10, 138);
+    gfx->setCursor(10, 147);
     gfx->print("Uptime: ");
     gfx->println(formatUptime());
 
     // Kept above NAV_Y so it doesn't collide with the buttons
-    gfx->setCursor(10, 162);
+    gfx->setCursor(10, 171);
     gfx->print("Health: ");
 
     if (state.internetPingMs == PING_NOT_RUN && state.gatewayPingMs == PING_NOT_RUN)
@@ -222,6 +225,8 @@ void drawNetworkScreen()
     }
 
     gfx->setTextColor(COLOR_TEXT);
+    gfx->setFont();
+    gfx->setTextSize(2);
 
     drawButton(
         NAV_LEFT_X,
@@ -396,10 +401,10 @@ void drawSystemScreen()
 
     titleBar("SYSTEM");
 
+    gfx->setFont(FONT_SANS_SMALL);
     gfx->setTextColor(COLOR_TEXT);
-    gfx->setTextSize(FONT_NORMAL);
 
-    gfx->setCursor(10, 50);
+    gfx->setCursor(10, 59);
     gfx->print("Free Heap: ");
     gfx->print(ESP.getFreeHeap() / 1024);
     gfx->println(" KB");
@@ -409,7 +414,7 @@ void drawSystemScreen()
     // gfx->print(lightPercent());
     // gfx->println("%");
 
-    gfx->setCursor(10, 110);
+    gfx->setCursor(10, 119);
     gfx->print("Uptime: ");
     gfx->println(formatUptime());
     // gfx->println(" sec");
@@ -479,26 +484,26 @@ void drawToolsScreen()
 
     titleBar("TOOLS");
 
+    gfx->setFont(FONT_SANS_SMALL);
     gfx->setTextColor(COLOR_TEXT);
-    gfx->setTextSize(FONT_NORMAL);
 
-    gfx->setCursor(10, 42);
+    gfx->setCursor(10, 51);
     gfx->print("Gateway ");
     gfx->println(WiFi.gatewayIP());
 
-    gfx->setCursor(10, 62);
+    gfx->setCursor(10, 71);
     gfx->print("Ping: ");
     drawPingResult(state.gatewayPingMs);
 
-    gfx->setCursor(10, 92);
+    gfx->setCursor(10, 101);
     gfx->print("Internet ");
     gfx->println(INTERNET_PING_HOST);
 
-    gfx->setCursor(10, 112);
+    gfx->setCursor(10, 121);
     gfx->print("Ping: ");
     drawPingResult(state.internetPingMs);
 
-    gfx->setCursor(10, 150);
+    gfx->setCursor(10, 159);
     gfx->print("RSSI: ");
     gfx->print(WiFi.RSSI());
     gfx->println(" dBm");
