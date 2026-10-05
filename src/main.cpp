@@ -121,7 +121,8 @@ void setup()
 
     connectWiFi();
 
-    syncTime();
+    if (!syncTime())
+        Serial.println("Time synchronization failed; start time unavailable.");
 
     //colorTest();
     // while (true);
@@ -169,19 +170,19 @@ void drawNetworkScreen()
     gfx->setTextSize(1);
     gfx->setTextColor(COLOR_TEXT);
 
-    gfx->setCursor(10, 45);
-    gfx->println("SSID:");
+    gfx->setCursor(10, 50);
+    gfx->print("SSID: ");
 
-    gfx->setCursor(15, 61);
+    // gfx->setCursor(15, 61);
     gfx->println(WiFi.SSID());
 
-    gfx->setCursor(10, 83);
-    gfx->println("IP:");
+    gfx->setCursor(10, 70);
+    gfx->print("IP: ");
 
-    gfx->setCursor(15, 99);
+    // gfx->setCursor(15, 99);
     gfx->println(WiFi.localIP());
 
-    gfx->setCursor(10, 123);
+    gfx->setCursor(10, 90);
     gfx->print("RSSI: ");
 
     const int rssi = WiFi.RSSI();
@@ -196,12 +197,15 @@ void drawNetworkScreen()
     gfx->println(" dBm");
     gfx->setTextColor(COLOR_TEXT);
 
-    gfx->setCursor(10, 147);
-    gfx->print("Uptime: ");
-    gfx->println(formatUptime());
+    gfx->setCursor(10, 110);
+    gfx->println("Uptime:");
+    gfx->setCursor(20, 130);
+    gfx->print(formatUptime());
+    gfx->print("   ");
+    gfx->println(startDateTimeString());
 
     // Kept above NAV_Y so it doesn't collide with the buttons
-    gfx->setCursor(10, 171);
+    gfx->setCursor(10, 150);
     gfx->print("Health: ");
 
     if (state.internetPingMs == PING_NOT_RUN && state.gatewayPingMs == PING_NOT_RUN)
@@ -414,10 +418,17 @@ void drawSystemScreen()
     // gfx->print(lightPercent());
     // gfx->println("%");
 
-    gfx->setCursor(10, 119);
-    gfx->print("Uptime: ");
-    gfx->println(formatUptime());
+    // gfx->setCursor(10, 119);
+    // gfx->print("Uptime: ");
+    // gfx->println(formatUptime());
     // gfx->println(" sec");
+
+    gfx->setCursor(10, 90);
+    gfx->println("Uptime:");
+    gfx->setCursor(20, 110);
+    gfx->print(formatUptime());
+    gfx->print("   ");
+    gfx->println(startDateTimeString());
 
     // gfx->setCursor(10, 140);
     // gfx->print("ADC34: ");

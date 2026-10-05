@@ -4,6 +4,12 @@
 #include <time.h>
 #include "credentials.h"
 
+inline String& synchronizedStartDateTime()
+{
+    static String startDateTime;
+    return startDateTime;
+}
+
 inline bool syncTime()
 {
     configTime(
@@ -17,9 +23,27 @@ inline bool syncTime()
 
     struct tm timeinfo;
 
-    return getLocalTime(
-        &timeinfo,
-        10000);
+    if (!getLocalTime(&timeinfo, 10000))
+        return false;
+
+    if (synchronizedStartDateTime().length() == 0)
+    {
+        char buffer[32];
+        if (strftime(buffer, sizeof(buffer), "%I:%M %p  %m/%d/%Y", &timeinfo) == 0)
+            return false;
+
+        synchronizedStartDateTime() = buffer;
+    }
+
+    return true;
+}
+
+inline String startDateTimeString()
+{
+    if (synchronizedStartDateTime().length() == 0)
+        return "Time unavailable";
+
+    return synchronizedStartDateTime();
 }
 
 inline String currentTimeString()
