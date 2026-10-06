@@ -128,4 +128,52 @@ inline bool touchInRect(
         touchY <= (y + h));
 }
 
+// ====================================================
+// Navigation Buttons
+// ====================================================
+
+inline bool navPressed1(int x, int y)
+{
+    return touchInRect(
+        x,
+        y,
+        NAV_X1,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT);
+}
+
+inline bool navPressed2(int x, int y)
+{
+    return touchInRect(
+        x,
+        y,
+        NAV_X2,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT);
+}
+
+inline bool navPressed3(int x, int y)
+{
+    return touchInRect(
+        x,
+        y,
+        NAV_X3,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT);
+}
+
+inline bool navPressed4(int x, int y)
+{
+    return touchInRect(
+        x,
+        y,
+        NAV_X4,
+        NAV_Y,
+        NAV_WIDTH,
+        NAV_HEIGHT);
+}
+
 #endif

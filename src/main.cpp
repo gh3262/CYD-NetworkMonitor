@@ -29,6 +29,8 @@ struct AppState
     int scanPage;
     int gatewayPingMs;
     int internetPingMs;
+    String currentSSID;
+    int currentRSSI;
 };
 
 const int PING_RUNNING = -3;
@@ -149,6 +151,21 @@ void connectWiFi()
     Serial.println("WiFi Connected");
 }
 
+// Prints a single ping time using the same colors as the Tools page
+static void printPingValue(int pingMs)
+{
+    if (pingMs >= 0)
+    {
+        gfx->setTextColor(pingMs > PING_SLOW_MS ? COLOR_WARNING : COLOR_OK);
+        gfx->print(pingMs);
+    }
+    else
+    {
+        gfx->setTextColor(COLOR_ERROR);
+        gfx->print("--");
+    }
+}
+
 void drawNetworkScreen()
 {
     clearScreen(COLOR_BACKGROUND);
@@ -204,8 +221,28 @@ void drawNetworkScreen()
     gfx->print("   ");
     gfx->println(startDateTimeString());
 
-    // Kept above NAV_Y so it doesn't collide with the buttons
     gfx->setCursor(10, 150);
+    gfx->print("Ping: ");
+    if (state.gatewayPingMs == PING_RUNNING || state.internetPingMs == PING_RUNNING)
+    {
+        gfx->print("Pinging...");
+    }
+    else if (state.gatewayPingMs == PING_NOT_RUN && state.internetPingMs == PING_NOT_RUN)
+    {
+        gfx->print("--");
+    }
+    else
+    {
+        printPingValue(state.gatewayPingMs);
+        gfx->setTextColor(COLOR_TEXT);
+        gfx->print(" / ");
+        printPingValue(state.internetPingMs);
+        gfx->setTextColor(COLOR_TEXT);
+        gfx->print(" ms");
+    }
+
+    // Kept above NAV_Y so it doesn't collide with the buttons
+    gfx->setCursor(10, 170);
     gfx->print("Health: ");
 
     if (state.internetPingMs == PING_NOT_RUN && state.gatewayPingMs == PING_NOT_RUN)
@@ -380,6 +417,16 @@ void drawSystemScreen()
     gfx->print(ESP.getFreeHeap() / 1024);
     gfx->println(" KB");
 
+    gfx->setCursor(10, 79);
+    gfx->print("Sketch Size: ");
+    gfx->print(ESP.getSketchSize() / 1024);
+    gfx->println(" KB");
+
+    gfx->setCursor(10, 99);
+    gfx->print("Min Heap: ");
+    gfx->print(ESP.getMinFreeHeap() / 1024);
+    gfx->println(" KB");
+
     // gfx->setCursor(10, 80);
     // gfx->print("Light Level: ");
     // gfx->print(lightPercent());
@@ -390,9 +437,9 @@ void drawSystemScreen()
     // gfx->println(formatUptime());
     // gfx->println(" sec");
 
-    gfx->setCursor(10, 90);
+    gfx->setCursor(10, 139);
     gfx->println("Uptime:");
-    gfx->setCursor(20, 110);
+    gfx->setCursor(20, 159);
     gfx->print(formatUptime());
     gfx->print("   ");
     gfx->println(startDateTimeString());
@@ -460,6 +507,8 @@ void drawPingResult(int pingMs)
     gfx->setTextColor(COLOR_TEXT);
 }
 
+static String timeSyncStatus = "--";
+
 void drawToolsScreen()
 {
     clearScreen(COLOR_BACKGROUND);
@@ -471,19 +520,25 @@ void drawToolsScreen()
 
     gfx->setCursor(10, 51);
     gfx->print("Gateway ");
-    gfx->println(WiFi.gatewayIP());
+    gfx->print(WiFi.gatewayIP());
+    gfx->print(" - "); // Add spacing before the ping result
 
-    gfx->setCursor(10, 71);
-    gfx->print("Ping: ");
+    // gfx->setCursor(10, 71);
+    // gfx->print("Ping: ");
     drawPingResult(state.gatewayPingMs);
 
-    gfx->setCursor(10, 101);
+    gfx->setCursor(10, 75);
     gfx->print("Internet ");
-    gfx->println(INTERNET_PING_HOST);
+    gfx->print(INTERNET_PING_HOST);
+    gfx->print(" - "); // Add spacing before the ping result
 
-    gfx->setCursor(10, 121);
-    gfx->print("Ping: ");
+    // gfx->setCursor(10, 121);
+    // gfx->print("Ping: ");
     drawPingResult(state.internetPingMs);
+
+    gfx->setCursor(10, 139);
+    gfx->print("Time: ");
+    gfx->println(timeSyncStatus);
 
     gfx->setCursor(10, 159);
     gfx->print("RSSI: ");
@@ -491,6 +546,7 @@ void drawToolsScreen()
     gfx->println(" dBm");
 
     drawNav1("Back");
+    drawNav2("NTP");
     drawNav3("Ping");
 }
 
@@ -560,31 +616,28 @@ if (getLocalTime(&timeinfo))
         if (state.currentScreen == SCREEN_STATUS)
         {
             // System button
-            if (touchInRect(
-                    x, y,
-                    NAV_X1, NAV_Y,
-                    NAV_WIDTH, NAV_HEIGHT))
+            if (navPressed1(x, y))
             {
                 enterSystemScreen();
                 delay(300);
             }
 
             // Scan button
-            else if (touchInRect(
-                    x, y,
-                    NAV_X2, NAV_Y,
-                    NAV_WIDTH, NAV_HEIGHT))
+            else if (navPressed2(x, y))
             {
                 enterScanScreen();
                 delay(300);
             }
 
             // Refresh button
-            else if (touchInRect(
-                    x, y,
-                    NAV_X3, NAV_Y,
-                    NAV_WIDTH, NAV_HEIGHT))
+        else if (navPressed3(x, y))
             {
+                state.gatewayPingMs = PING_RUNNING;
+                state.internetPingMs = PING_RUNNING;
+                drawCurrentScreen();
+
+                performGatewayPing();
+                performInternetPing();
                 drawCurrentScreen();
                 networkSignalLED(WiFi.RSSI());
                 delay(300);
@@ -593,10 +646,7 @@ if (getLocalTime(&timeinfo))
         else if (state.currentScreen == SCREEN_SCAN)
         {
             // Back button
-            if (touchInRect(
-                    x, y,
-                    NAV_X1, NAV_Y,
-                    NAV_WIDTH, NAV_HEIGHT))
+        if (navPressed1(x, y))
             {
                 state.currentScreen = SCREEN_STATUS;
                 drawCurrentScreen();
@@ -604,10 +654,7 @@ if (getLocalTime(&timeinfo))
             }
 
             // Next page button (only present when there is more than one page)
-            else if (scanPageCount() > 1 && touchInRect(
-                    x, y,
-                    NAV_X2, NAV_Y,
-                    NAV_WIDTH, NAV_HEIGHT))
+            else if (scanPageCount() > 1 && navPressed2(x, y))
             {
                 state.scanPage = (state.scanPage + 1) % scanPageCount();
                 drawCurrentScreen();
@@ -615,10 +662,7 @@ if (getLocalTime(&timeinfo))
             }
 
             // Rescan button
-            else if (touchInRect(
-                    x, y,
-                    NAV_X3, NAV_Y,
-                    NAV_WIDTH, NAV_HEIGHT))
+            else if (navPressed3(x, y))
             {
                 performScan();
                 drawCurrentScreen();
@@ -628,10 +672,7 @@ if (getLocalTime(&timeinfo))
         else if (state.currentScreen == SCREEN_SYSTEM)
         {
             // Back button
-            if (touchInRect(
-                    x, y,
-                    NAV_X1, NAV_Y,
-                    NAV_WIDTH, NAV_HEIGHT))
+            if (navPressed1(x, y))
             {
                 state.currentScreen = SCREEN_STATUS;
                 drawCurrentScreen();
@@ -639,20 +680,14 @@ if (getLocalTime(&timeinfo))
             }
 
             // Tools button
-            else if (touchInRect(
-                    x, y,
-                    NAV_X2, NAV_Y,
-                    NAV_WIDTH, NAV_HEIGHT))
+            else if (navPressed2(x, y))
             {
                 enterToolsScreen();
                 delay(300);
             }
 
             // Refresh button
-            else if (touchInRect(
-                    x, y,
-                    NAV_X3, NAV_Y,
-                    NAV_WIDTH, NAV_HEIGHT))
+            else if (navPressed3(x, y))
             {
                 drawCurrentScreen();
                 delay(300);
@@ -661,20 +696,26 @@ if (getLocalTime(&timeinfo))
         else if (state.currentScreen == SCREEN_TOOLS)
         {
             // Back button returns to the System screen
-            if (touchInRect(
-                    x, y,
-                    NAV_X1, NAV_Y,
-                    NAV_WIDTH, NAV_HEIGHT))
+            if (navPressed1(x, y))
             {
                 enterSystemScreen();
                 delay(300);
             }
 
+            // NTP sync button
+            else if (navPressed2(x, y))
+            {
+                timeSyncStatus = "Syncing...";
+                drawCurrentScreen();
+
+                timeSyncStatus = syncTime() ? "Synced" : "Sync failed";
+                drawCurrentScreen();
+                drawClock();
+                delay(300);
+            }
+
             // Ping button
-            else if (touchInRect(
-                    x, y,
-                    NAV_X3, NAV_Y,
-                    NAV_WIDTH, NAV_HEIGHT))
+            else if (navPressed3(x, y))
             {
                 state.gatewayPingMs = PING_RUNNING;
                 state.internetPingMs = PING_RUNNING;
