@@ -16,7 +16,8 @@ const char* password = WIFI_PASSWORD;
 
 enum Screen
 {
-    SCREEN_STATUS,
+    SCREEN_HOME,
+    SCREEN_WIFI_STATUS,
     SCREEN_SCAN,
     SCREEN_SYSTEM,
     SCREEN_TOOLS
@@ -40,7 +41,7 @@ const int PING_FAILED = -1;
 
 const char* INTERNET_PING_HOST = "8.8.8.8";
 
-AppState state = {SCREEN_STATUS, 0, 0, PING_NOT_RUN, PING_NOT_RUN};
+AppState state = {SCREEN_HOME, 0, 0, PING_NOT_RUN, PING_NOT_RUN};
 
 // Scan list layout
 const int SCAN_LINE_HEIGHT = 12;
@@ -59,8 +60,13 @@ std::vector<int> scanOrder;
 // Connection
 void connectWiFi();
 
+// Home Screen
+void drawHomeScreen();
+void enterHomeScreen();
+
 // Status Screen
-void drawNetworkScreen();
+void drawWifiStatusScreen();
+void enterWifiStatusScreen();
 
 // Scan Screen
 void performScan();
@@ -166,12 +172,36 @@ static void printPingValue(int pingMs)
     }
 }
 
-void drawNetworkScreen()
+void drawHomeScreen()
 {
     clearScreen(COLOR_BACKGROUND);
 
     titleBar(
-        "NETWORK STATUS",
+        "HOME",
+        COLOR_HEADER_BG,
+        COLOR_HEADER_TEXT);
+
+    drawNav1("WiFi");
+}
+
+void enterHomeScreen()
+{
+    state.currentScreen = SCREEN_HOME;
+    drawCurrentScreen();
+}
+
+void enterWifiStatusScreen()
+{
+    state.currentScreen = SCREEN_WIFI_STATUS;
+    drawCurrentScreen();
+}
+
+void drawWifiStatusScreen()
+{
+    clearScreen(COLOR_BACKGROUND);
+
+    titleBar(
+        "WIFI STATUS",
         COLOR_HEADER_BG,
         COLOR_HEADER_TEXT);
 
@@ -272,14 +302,19 @@ void drawNetworkScreen()
     drawNav1("System");
     drawNav2("Scan");
     drawNav3("Refresh");
+    drawNav4("Home");
 }
 
 void drawCurrentScreen()
 {
     switch (state.currentScreen)
     {
-        case SCREEN_STATUS:
-            drawNetworkScreen();
+        case SCREEN_HOME:
+            drawHomeScreen();
+            break;
+
+        case SCREEN_WIFI_STATUS:
+            drawWifiStatusScreen();
             break;
 
         case SCREEN_SCAN:
@@ -380,6 +415,7 @@ void drawScanScreen()
     }
 
     drawNav3("Rescan");
+    drawNav4("Home");
 }
 
 void enterScanScreen()
@@ -472,6 +508,7 @@ void drawSystemScreen()
     drawNav1("Back");
     drawNav2("Tools");
     drawNav3("Refresh");
+    drawNav4("Home");
 }
 
 void enterSystemScreen()
@@ -548,6 +585,7 @@ void drawToolsScreen()
     drawNav1("Back");
     drawNav2("NTP");
     drawNav3("Ping");
+    drawNav4("Home");
 }
 
 int pingHost(const IPAddress& host)
@@ -613,7 +651,22 @@ if (getLocalTime(&timeinfo))
         Serial.print(",");
         Serial.println(y);
 
-        if (state.currentScreen == SCREEN_STATUS)
+        if (state.currentScreen == SCREEN_HOME)
+        {
+            // WiFi button
+            if (navPressed1(x, y))
+            {
+                enterWifiStatusScreen();
+                delay(300);
+            }
+        }
+        else if (navPressed4(x, y))
+        {
+            // Home button (present on every screen except Home)
+            enterHomeScreen();
+            delay(300);
+        }
+        else if (state.currentScreen == SCREEN_WIFI_STATUS)
         {
             // System button
             if (navPressed1(x, y))
@@ -648,8 +701,7 @@ if (getLocalTime(&timeinfo))
             // Back button
         if (navPressed1(x, y))
             {
-                state.currentScreen = SCREEN_STATUS;
-                drawCurrentScreen();
+                enterWifiStatusScreen();
                 delay(300);
             }
 
@@ -674,8 +726,7 @@ if (getLocalTime(&timeinfo))
             // Back button
             if (navPressed1(x, y))
             {
-                state.currentScreen = SCREEN_STATUS;
-                drawCurrentScreen();
+                enterWifiStatusScreen();
                 delay(300);
             }
 
