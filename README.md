@@ -1,5 +1,61 @@
 # CYD Network Monitor
 
+A touchscreen network diagnostics appliance for the ESP32-2432S028R
+(Cheap Yellow Display).
+
+Originally developed as a first PlatformIO project, the software has
+evolved into a modular dashboard framework supporting WiFi diagnostics,
+system monitoring, NTP time synchronization, and touchscreen navigation.
+
+## Features
+
+- WiFi Status Dashboard
+- WiFi Network Scanner
+- Network Health Monitoring
+- Gateway Ping Diagnostics
+- Internet Connectivity Testing
+- NTP Time Synchronization
+- System Information Screen
+- Touchscreen Navigation
+- Theme and Font Support
+
+## Hardware
+
+- ESP32-2432S028R (CYD)
+- ILI9341 TFT Display
+- XPT2046 Touchscreen
+- RGB Status LED
+- MicroSD Support
+
+## Architecture
+
+HOME
+└── WiFi
+    ├── Status
+    ├── Scan
+    ├── Tools
+    └── System
+
+Framework Components
+
+- cyd_display
+- cyd_touch
+- cyd_time
+- cyd_theme
+
+## Future Development
+
+- Bluetooth Scanner
+- Bluetooth Device Control
+- Camera Remote Functions
+- MQTT Integration
+- Adafruit IO Integration
+- Additional Diagnostics
+
+# ---------------------------------------------------------------------
+# SUMMARY:
+# CYD Network Monitor
+
 A touch-screen network monitor for the ESP32 "Cheap Yellow Display" (CYD, ESP32-2432S028R: 320x240 TFT with XPT2046 touch). It shows WiFi status, scans for nearby networks, measures gateway and internet latency, and keeps its clock in sync over NTP. This was my first PlatformIO project.
 
 ## Features
