@@ -1,93 +1,18 @@
 #include <Arduino.h>
-#include <algorithm>
-#include <vector>
 #include <WiFi.h>
-#include <ESP32Ping.h>
-#include "cyd.h"
+#include "app.h"
 #include "credentials.h"
-#include <Fonts/FreeMono9pt7b.h>
-#include <Fonts/FreeSans9pt7b.h>
-#include <Fonts/FreeSans12pt7b.h>
-#include <Fonts/FreeSans18pt7b.h>
-
 
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 
-enum Screen
-{
-    SCREEN_HOME,
-    SCREEN_WIFI_STATUS,
-    SCREEN_SCAN,
-    SCREEN_SYSTEM,
-    SCREEN_TOOLS
-};
-
-struct AppState
-{
-    Screen currentScreen;
-    int networkCount;
-    int scanPage;
-    int gatewayPingMs;
-    int internetPingMs;
-    String currentSSID;
-    int currentRSSI;
-};
-
-const int PING_RUNNING = -3;
-const int PING_SLOW_MS = 100;
-const int PING_NOT_RUN = -2;
-const int PING_FAILED = -1;
-
-const char* INTERNET_PING_HOST = "8.8.8.8";
-
 AppState state = {SCREEN_HOME, 0, 0, PING_NOT_RUN, PING_NOT_RUN};
-
-// Scan list layout
-const int SCAN_LINE_HEIGHT = 12;
-const int SCAN_FIRST_LINE_Y = 50;
-const int SCAN_ROWS_PER_PAGE = (NAV_Y - 5 - SCAN_FIRST_LINE_Y) / SCAN_LINE_HEIGHT;
-
-int scanPageCount()
-{
-    const int count = state.networkCount < 0 ? 0 : state.networkCount;
-    return (count + SCAN_ROWS_PER_PAGE - 1) / SCAN_ROWS_PER_PAGE;
-}
-
-// Scan result indices sorted by signal strength, strongest first
-std::vector<int> scanOrder;
 
 // Connection
 void connectWiFi();
 
-// Home Screen
-void drawHomeScreen();
-void enterHomeScreen();
-
-// Status Screen
-void drawWifiStatusScreen();
-void enterWifiStatusScreen();
-
-// Scan Screen
-void performScan();
-void drawScanScreen();
-
-// System Screen
-void drawSystemScreen();
-
-// Tools Screen
-void drawToolsScreen();
-void enterToolsScreen();
-void performGatewayPing();
-void performInternetPing();
-
 // Diagnostics
 void colorTest();
-
-// Navigation
-void drawCurrentScreen();
-void enterScanScreen();
-void enterSystemScreen();
 
 void setup()
 {
@@ -157,154 +82,6 @@ void connectWiFi()
     Serial.println("WiFi Connected");
 }
 
-// Prints a single ping time using the same colors as the Tools page
-static void printPingValue(int pingMs)
-{
-    if (pingMs >= 0)
-    {
-        gfx->setTextColor(pingMs > PING_SLOW_MS ? COLOR_WARNING : COLOR_OK);
-        gfx->print(pingMs);
-    }
-    else
-    {
-        gfx->setTextColor(COLOR_ERROR);
-        gfx->print("--");
-    }
-}
-
-void drawHomeScreen()
-{
-    clearScreen(COLOR_BACKGROUND);
-
-    titleBar(
-        "HOME",
-        COLOR_HEADER_BG,
-        COLOR_HEADER_TEXT);
-
-    drawNav1("WiFi");
-}
-
-void enterHomeScreen()
-{
-    state.currentScreen = SCREEN_HOME;
-    drawCurrentScreen();
-}
-
-void enterWifiStatusScreen()
-{
-    state.currentScreen = SCREEN_WIFI_STATUS;
-    drawCurrentScreen();
-}
-
-void drawWifiStatusScreen()
-{
-    clearScreen(COLOR_BACKGROUND);
-
-    titleBar(
-        "WIFI STATUS",
-        COLOR_HEADER_BG,
-        COLOR_HEADER_TEXT);
-
-    // gfx->setTextSize(1);
-    // gfx->setTextColor(COLOR_WARNING);
-
-    // gfx->setCursor(195, 10);
-    // gfx->println(currentTimeString());
-    // gfx->setCursor(255, 10);
-    // gfx->println(currentDateString());
-
-    setBodyFont();
-    gfx->setTextSize(1);
-    gfx->setTextColor(COLOR_TEXT);
-
-    gfx->setCursor(10, 50);
-    gfx->print("SSID: ");
-
-    // gfx->setCursor(15, 61);
-    gfx->println(WiFi.SSID());
-
-    gfx->setCursor(10, 70);
-    gfx->print("IP: ");
-
-    // gfx->setCursor(15, 99);
-    gfx->println(WiFi.localIP());
-
-    gfx->setCursor(10, 90);
-    gfx->print("RSSI: ");
-
-    const int rssi = WiFi.RSSI();
-    if (rssi > -65)
-        gfx->setTextColor(COLOR_OK);
-    else if (rssi > -80)
-        gfx->setTextColor(COLOR_WARNING);
-    else
-        gfx->setTextColor(COLOR_ERROR);
-
-    gfx->print(rssi);
-    gfx->println(" dBm");
-    gfx->setTextColor(COLOR_TEXT);
-
-    gfx->setCursor(10, 110);
-    gfx->println("Uptime:");
-    gfx->setCursor(20, 130);
-    gfx->print(formatUptime());
-    gfx->print("   ");
-    gfx->println(startDateTimeString());
-
-    gfx->setCursor(10, 150);
-    gfx->print("Ping: ");
-    if (state.gatewayPingMs == PING_RUNNING || state.internetPingMs == PING_RUNNING)
-    {
-        gfx->print("Pinging...");
-    }
-    else if (state.gatewayPingMs == PING_NOT_RUN && state.internetPingMs == PING_NOT_RUN)
-    {
-        gfx->print("--");
-    }
-    else
-    {
-        printPingValue(state.gatewayPingMs);
-        gfx->setTextColor(COLOR_TEXT);
-        gfx->print(" / ");
-        printPingValue(state.internetPingMs);
-        gfx->setTextColor(COLOR_TEXT);
-        gfx->print(" ms");
-    }
-
-    // Kept above NAV_Y so it doesn't collide with the buttons
-    gfx->setCursor(10, 170);
-    gfx->print("Health: ");
-
-    if (state.internetPingMs == PING_NOT_RUN && state.gatewayPingMs == PING_NOT_RUN)
-    {
-        gfx->println("--");
-    }
-    else if (state.internetPingMs >= 0)
-    {
-        gfx->setTextColor(COLOR_OK);
-        gfx->println("ONLINE");
-    }
-    else if (state.gatewayPingMs >= 0)
-    {
-        gfx->setTextColor(COLOR_WARNING);
-        gfx->println("LOCAL ONLY");
-    }
-    else
-    {
-        gfx->setTextColor(COLOR_ERROR);
-        gfx->println("OFFLINE");
-    }
-
-    gfx->setTextColor(COLOR_TEXT);
-    setDefaultFont();
-    gfx->setTextSize(2);
-
-    drawNav1("System");
-    drawNav2("Scan");
-    drawNav3("Refresh");
-    drawNav4("Home");
-}
-
 void drawCurrentScreen()
 {
     switch (state.currentScreen)
@@ -331,101 +108,6 @@ void drawCurrentScreen()
     }
 }
 
-void performScan()
-{
-    clearScreen(COLOR_BACKGROUND);
-
-    titleBar("WIFI SCAN");
-
-    gfx->setTextColor(COLOR_TEXT);
-    gfx->setTextSize(FONT_SMALL);
-
-    gfx->setCursor(10, 50);
-    gfx->println("Scanning...");
-
-    state.networkCount = WiFi.scanNetworks();
-    state.scanPage = 0;
-
-    scanOrder.clear();
-    for (int i = 0; i < state.networkCount; i++)
-    {
-        scanOrder.push_back(i);
-    }
-
-    std::sort(scanOrder.begin(), scanOrder.end(), [](int a, int b)
-    {
-        return WiFi.RSSI(a) > WiFi.RSSI(b);
-    });
-}
-
-void drawScanScreen()
-{
-   
-    clearScreen(COLOR_BACKGROUND);
-
-    titleBar("WIFI SCAN");
-
-    setDefaultFont();
-    gfx->setTextColor(COLOR_TEXT);
-    gfx->setTextSize(1);
-
-    const int pageCount = scanPageCount();
-
-    // y=25 would sit inside the 30 px title bar, so draw the count just below it
-    char buffer[40];
-    if (pageCount > 1)
-    {
-        snprintf(buffer, sizeof(buffer), "Found %d networks (page %d/%d)",
-                 state.networkCount, state.scanPage + 1, pageCount);
-    }
-    else
-    {
-        snprintf(buffer, sizeof(buffer), "Found %d networks", state.networkCount < 0 ? 0 : state.networkCount);
-    }
-    gfx->setCursor(10, 36);
-    gfx->println(buffer);
-
-    const String connectedBssid = WiFi.BSSIDstr();
-    const int firstRow = state.scanPage * SCAN_ROWS_PER_PAGE;
-
-    for (int row = 0; row < SCAN_ROWS_PER_PAGE && firstRow + row < (int)scanOrder.size(); row++)
-    {
-        const int i = scanOrder[firstRow + row];
-
-        gfx->setCursor(10, SCAN_FIRST_LINE_Y + (row * SCAN_LINE_HEIGHT));
-
-        const bool connected = (WiFi.status() == WL_CONNECTED) && (WiFi.BSSIDstr(i) == connectedBssid);
-        gfx->setTextColor(connected ? COLOR_OK : COLOR_TEXT);
-
-        gfx->print(WiFi.SSID(i));
-
-        gfx->print(" ");
-
-        gfx->print(WiFi.RSSI(i));
-
-        gfx->println(" dBm");
-    }
-    setDefaultFont();
-
-    drawNav1("Back");
-
-    if (pageCount > 1)
-    {
-        drawNav2("Next");
-    }
-
-    drawNav3("Rescan");
-    drawNav4("Home");
-}
-
-void enterScanScreen()
-{
-    performScan();
-
-    state.currentScreen = SCREEN_SCAN;
-    drawCurrentScreen();
-}
-
 void colorTest()
 {
     gfx->fillRect(0,   0, 80, 80, CYD_BLACK);
@@ -439,210 +121,62 @@ void colorTest()
     gfx->fillRect(240, 80, 80, 80, CYD_MAGENTA);
 }
 
-void drawSystemScreen()
+static void handleTouch(int x, int y)
 {
-    clearScreen(COLOR_BACKGROUND);
-
-    titleBar("SYSTEM");
-
-    setBodyFont();
-    gfx->setTextColor(COLOR_TEXT);
-
-    gfx->setCursor(10, 59);
-    gfx->print("Free Heap: ");
-    gfx->print(ESP.getFreeHeap() / 1024);
-    gfx->println(" KB");
-
-    gfx->setCursor(10, 79);
-    gfx->print("Sketch Size: ");
-    gfx->print(ESP.getSketchSize() / 1024);
-    gfx->println(" KB");
-
-    gfx->setCursor(10, 99);
-    gfx->print("Min Heap: ");
-    gfx->print(ESP.getMinFreeHeap() / 1024);
-    gfx->println(" KB");
-
-    // gfx->setCursor(10, 80);
-    // gfx->print("Light Level: ");
-    // gfx->print(lightPercent());
-    // gfx->println("%");
-
-    // gfx->setCursor(10, 119);
-    // gfx->print("Uptime: ");
-    // gfx->println(formatUptime());
-    // gfx->println(" sec");
-
-    gfx->setCursor(10, 139);
-    gfx->println("Uptime:");
-    gfx->setCursor(20, 159);
-    gfx->print(formatUptime());
-    gfx->print("   ");
-    gfx->println(startDateTimeString());
-
-    // gfx->setCursor(10, 140);
-    // gfx->print("ADC34: ");
-    // gfx->println(analogRead(34));
-
-    // drawButton(
-    //     NAV_LEFT_X,
-    //     NAV_Y,
-    //     NAV_WIDTH,
-    //     NAV_HEIGHT,
-    //     "Back");
-
-    // drawButton(
-    //     NAV_CENTER_X,
-    //     NAV_Y,
-    //     NAV_WIDTH,
-    //     NAV_HEIGHT,
-    //     "Tools");
-
-    // drawButton(
-    //     NAV_RIGHT_X,
-    //     NAV_Y,
-    //     NAV_WIDTH,
-    //     NAV_HEIGHT,
-    //     "Refresh");
-
-    drawNav1("Back");
-    drawNav2("Tools");
-    drawNav3("Refresh");
-    drawNav4("Home");
-}
-
-void enterSystemScreen()
-{
-    state.currentScreen = SCREEN_SYSTEM;
-    drawCurrentScreen();
-}
-
-void drawPingResult(int pingMs)
-{
-    if (pingMs == PING_NOT_RUN)
+    if (state.currentScreen == SCREEN_HOME)
     {
-        gfx->setTextColor(COLOR_TEXT);
-        gfx->println("--");
-    }
-    else if (pingMs == PING_RUNNING)
-    {
-        gfx->setTextColor(COLOR_WARNING);
-        gfx->println("Pinging...");
-    }
-    else if (pingMs == PING_FAILED)
-    {
-        gfx->setTextColor(COLOR_ERROR);
-        gfx->println("No reply");
-    }
-    else
-    {
-        gfx->setTextColor(pingMs > PING_SLOW_MS ? COLOR_WARNING : COLOR_OK);
-        gfx->print(pingMs);
-        gfx->println(" ms");
+        handleHomeTouch(x, y);
+        return;
     }
 
-    gfx->setTextColor(COLOR_TEXT);
-}
-
-static String timeSyncStatus = "--";
-
-void drawToolsScreen()
-{
-    clearScreen(COLOR_BACKGROUND);
-
-    titleBar("TOOLS");
-
-    setBodyFont();
-    gfx->setTextColor(COLOR_TEXT);
-
-    gfx->setCursor(10, 51);
-    gfx->print("Gateway ");
-    gfx->print(WiFi.gatewayIP());
-    gfx->print(" - "); // Add spacing before the ping result
-
-    // gfx->setCursor(10, 71);
-    // gfx->print("Ping: ");
-    drawPingResult(state.gatewayPingMs);
-
-    gfx->setCursor(10, 75);
-    gfx->print("Internet ");
-    gfx->print(INTERNET_PING_HOST);
-    gfx->print(" - "); // Add spacing before the ping result
-
-    // gfx->setCursor(10, 121);
-    // gfx->print("Ping: ");
-    drawPingResult(state.internetPingMs);
-
-    gfx->setCursor(10, 139);
-    gfx->print("Time: ");
-    gfx->println(timeSyncStatus);
-
-    gfx->setCursor(10, 159);
-    gfx->print("RSSI: ");
-    gfx->print(WiFi.RSSI());
-    gfx->println(" dBm");
-
-    drawNav1("Back");
-    drawNav2("NTP");
-    drawNav3("Ping");
-    drawNav4("Home");
-}
-
-int pingHost(const IPAddress& host)
-{
-    if (WiFi.status() != WL_CONNECTED)
+    // Home button (present on every screen except Home)
+    if (navPressed4(x, y))
     {
-        return PING_FAILED;
+        enterHomeScreen();
+        delay(300);
+        return;
     }
 
-    if (Ping.ping(host, 3))
+    switch (state.currentScreen)
     {
-        return (int)Ping.averageTime();
+        case SCREEN_WIFI_STATUS:
+            handleWifiStatusTouch(x, y);
+            break;
+
+        case SCREEN_SCAN:
+            handleScanTouch(x, y);
+            break;
+
+        case SCREEN_SYSTEM:
+            handleSystemTouch(x, y);
+            break;
+
+        case SCREEN_TOOLS:
+            handleToolsTouch(x, y);
+            break;
+
+        default:
+            break;
     }
-
-    return PING_FAILED;
-}
-
-void performGatewayPing()
-{
-    state.gatewayPingMs = pingHost(WiFi.gatewayIP());
-}
-
-void performInternetPing()
-{
-    state.internetPingMs = pingHost(IPAddress(8, 8, 8, 8));
-}
-void enterToolsScreen()
-{
-    state.currentScreen = SCREEN_TOOLS;
-    drawCurrentScreen();
 }
 
 void loop()
 {
     int x, y;
 
-    // static unsigned long lastClockUpdate = 0;
-
-    // if (millis() - lastClockUpdate > 15000)
-    // {
-    //     drawClock();
-    //     lastClockUpdate = millis();
-    // }
-
     static int lastMinute = -1;
 
-struct tm timeinfo;
+    struct tm timeinfo;
 
-if (getLocalTime(&timeinfo))
-{
-    if (timeinfo.tm_min != lastMinute)
+    if (getLocalTime(&timeinfo))
     {
-        drawClock();
+        if (timeinfo.tm_min != lastMinute)
+        {
+            drawClock();
 
-        lastMinute = timeinfo.tm_min;
+            lastMinute = timeinfo.tm_min;
+        }
     }
-}
 
     if (getTouch(x, y))
     {
@@ -651,132 +185,6 @@ if (getLocalTime(&timeinfo))
         Serial.print(",");
         Serial.println(y);
 
-        if (state.currentScreen == SCREEN_HOME)
-        {
-            // WiFi button
-            if (navPressed1(x, y))
-            {
-                enterWifiStatusScreen();
-                delay(300);
-            }
-        }
-        else if (navPressed4(x, y))
-        {
-            // Home button (present on every screen except Home)
-            enterHomeScreen();
-            delay(300);
-        }
-        else if (state.currentScreen == SCREEN_WIFI_STATUS)
-        {
-            // System button
-            if (navPressed1(x, y))
-            {
-                enterSystemScreen();
-                delay(300);
-            }
-
-            // Scan button
-            else if (navPressed2(x, y))
-            {
-                enterScanScreen();
-                delay(300);
-            }
-
-            // Refresh button
-        else if (navPressed3(x, y))
-            {
-                state.gatewayPingMs = PING_RUNNING;
-                state.internetPingMs = PING_RUNNING;
-                drawCurrentScreen();
-
-                performGatewayPing();
-                performInternetPing();
-                drawCurrentScreen();
-                networkSignalLED(WiFi.RSSI());
-                delay(300);
-            }
-        }
-        else if (state.currentScreen == SCREEN_SCAN)
-        {
-            // Back button
-        if (navPressed1(x, y))
-            {
-                enterWifiStatusScreen();
-                delay(300);
-            }
-
-            // Next page button (only present when there is more than one page)
-            else if (scanPageCount() > 1 && navPressed2(x, y))
-            {
-                state.scanPage = (state.scanPage + 1) % scanPageCount();
-                drawCurrentScreen();
-                delay(300);
-            }
-
-            // Rescan button
-            else if (navPressed3(x, y))
-            {
-                performScan();
-                drawCurrentScreen();
-                delay(300);
-            }
-        }
-        else if (state.currentScreen == SCREEN_SYSTEM)
-        {
-            // Back button
-            if (navPressed1(x, y))
-            {
-                enterWifiStatusScreen();
-                delay(300);
-            }
-
-            // Tools button
-            else if (navPressed2(x, y))
-            {
-                enterToolsScreen();
-                delay(300);
-            }
-
-            // Refresh button
-            else if (navPressed3(x, y))
-            {
-                drawCurrentScreen();
-                delay(300);
-            }
-        }
-        else if (state.currentScreen == SCREEN_TOOLS)
-        {
-            // Back button returns to the System screen
-            if (navPressed1(x, y))
-            {
-                enterSystemScreen();
-                delay(300);
-            }
-
-            // NTP sync button
-            else if (navPressed2(x, y))
-            {
-                timeSyncStatus = "Syncing...";
-                drawCurrentScreen();
-
-                timeSyncStatus = syncTime() ? "Synced" : "Sync failed";
-                drawCurrentScreen();
-                drawClock();
-                delay(300);
-            }
-
-            // Ping button
-            else if (navPressed3(x, y))
-            {
-                state.gatewayPingMs = PING_RUNNING;
-                state.internetPingMs = PING_RUNNING;
-                drawCurrentScreen();
-
-                performGatewayPing();
-                performInternetPing();
-                drawCurrentScreen();
-                delay(300);
-            }
-        }
+        handleTouch(x, y);
     }
 }

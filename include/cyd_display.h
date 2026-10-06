@@ -10,18 +10,7 @@
 // ====================================================
 // Display Objects
 // ====================================================
-static Arduino_DataBus *displayBus =
-    new Arduino_ESP32SPI(
-        TFT_DC,
-        TFT_CS,
-        TFT_SCK,
-        TFT_MOSI,
-        TFT_MISO);
-static Arduino_GFX *gfx =
-    new Arduino_ILI9341(
-        displayBus,
-        TFT_RST,
-        1);
+extern Arduino_GFX *gfx;
 // ====================================================
 // Initialization
 // ====================================================

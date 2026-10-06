@@ -10,7 +10,7 @@
 // Touch Object
 // ====================================================
 
-static XPT2046_Touchscreen touch(TOUCH_CS);
+extern XPT2046_Touchscreen touch;
 
 // ====================================================
 // Initialization
