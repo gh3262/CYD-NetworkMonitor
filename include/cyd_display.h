@@ -71,7 +71,7 @@ inline void titleBar(
     uint16_t bgColor = COLOR_HEADER_BG,
     uint16_t textColor = COLOR_HEADER_TEXT)
 {
-    gfx->fillRect(0, 0, 320, 30, bgColor);
+    gfx->fillRect(0, 0, SCREEN_WIDTH, HEADER_HEIGHT, bgColor);
     setHeaderFont();
     gfx->setTextColor(textColor);
     gfx->setTextSize(1);
@@ -100,7 +100,7 @@ inline void centerText(
         &y1,
         &w,
         &h);
-    int x = (320 - w) / 2 - x1;
+    int x = (SCREEN_WIDTH - w) / 2 - x1;
     gfx->setCursor(x, y - y1);
     gfx->print(text);
 }
@@ -167,20 +167,5 @@ inline void drawNav3(const char *label)
 inline void drawNav4(const char *label)
 {
     drawButton(NAV_X4, NAV_Y, NAV_WIDTH, NAV_HEIGHT, label);
-}
-
-inline bool pointInButton(
-    int touchX,
-    int touchY,
-    int x,
-    int y,
-    int w,
-    int h)
-{
-    return (
-        touchX >= x &&
-        touchX <= (x + w) &&
-        touchY >= y &&
-        touchY <= (y + h));
 }
 #endif

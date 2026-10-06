@@ -80,31 +80,6 @@ inline void backlightOff()
     digitalWrite(TFT_BL, LOW);
 }
 // ====================================================
-// Touch Conversion
-// ====================================================
-inline int touchToScreenX(int rawX)
-{
-    return constrain(
-        map(rawX,
-            TOUCH_X_MIN,
-            TOUCH_X_MAX,
-            0,
-            320),
-        0,
-        319);
-}
-inline int touchToScreenY(int rawY)
-{
-    return constrain(
-        map(rawY,
-            TOUCH_Y_MIN,
-            TOUCH_Y_MAX,
-            0,
-            240),
-        0,
-        239);
-}
-// ====================================================
 // Light Sensor
 // ====================================================
 inline int lightLevel()
@@ -123,20 +98,8 @@ inline int lightPercent()
 // ====================================================
 // Uptime Helpers
 // ====================================================
-inline unsigned long uptimeSeconds()
-{
-    return millis() / 1000;
-}
-inline unsigned long uptimeMinutes()
-{
-    return millis() / 60000;
-}
-inline unsigned long uptimeHours()
-{
-    return millis() / 3600000;
-}
-
-inline String formatUptime()
+// Returns a static buffer: use it right away
+inline const char* formatUptime()
 {
     unsigned long totalSeconds = millis() / 1000;
 
@@ -149,7 +112,7 @@ inline String formatUptime()
     unsigned long seconds =
         totalSeconds % 60;
 
-    char buffer[16];
+    static char buffer[16];
 
     snprintf(
         buffer,
@@ -159,6 +122,6 @@ inline String formatUptime()
         minutes,
         seconds);
 
-    return String(buffer);
+    return buffer;
 }
 #endif

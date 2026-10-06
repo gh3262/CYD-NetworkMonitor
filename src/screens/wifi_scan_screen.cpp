@@ -7,8 +7,16 @@ static const int SCAN_LINE_HEIGHT = 12;
 static const int SCAN_FIRST_LINE_Y = 50;
 static const int SCAN_ROWS_PER_PAGE = (NAV_Y - 5 - SCAN_FIRST_LINE_Y) / SCAN_LINE_HEIGHT;
 
-// Scan result indices sorted by signal strength, strongest first
-static std::vector<int> scanOrder;
+// Results copied out of the WiFi driver so its scan memory can be freed at once,
+// sorted by signal strength, strongest first
+struct ScanEntry
+{
+    char ssid[33];
+    int rssi;
+    bool connected;
+};
+
+static std::vector<ScanEntry> scanList;
 
 static int scanPageCount()
 {
@@ -16,33 +24,85 @@ static int scanPageCount()
     return (count + SCAN_ROWS_PER_PAGE - 1) / SCAN_ROWS_PER_PAGE;
 }
 
-void performScan()
+static const unsigned long SCAN_TIMEOUT_MS = 15000;
+
+static bool scanning = false;
+static unsigned long scanStartMs = 0;
+
+bool scanInProgress()
 {
-    clearScreen(COLOR_BACKGROUND);
-
-    titleBar("WIFI SCAN");
-
-    gfx->setTextColor(COLOR_TEXT);
-    gfx->setTextSize(FONT_SMALL);
-
-    gfx->setCursor(10, 50);
-    gfx->println("Scanning...");
-
-    state.networkCount = WiFi.scanNetworks();
-    state.scanPage = 0;
-
-    scanOrder.clear();
-    for (int i = 0; i < state.networkCount; i++)
-    {
-        scanOrder.push_back(i);
-    }
-
-    std::sort(scanOrder.begin(), scanOrder.end(), [](int a, int b)
-    {
-        return WiFi.RSSI(a) > WiFi.RSSI(b);
-    });
+    return scanning;
 }
 
+// Starts an asynchronous scan; updateScan() collects the results
+static void startScan()
+{
+    if (scanning)
+        return;
+
+    // A pending connection attempt keeps the radio busy and makes the scan
+    // fail, so drop it first; maintainWiFi() restarts it later
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        WiFi.disconnect();
+        delay(100);
+    }
+
+    scanList.clear();
+    state.networkCount = 0;
+    state.scanPage = 0;
+
+    // The core aborts a scan after 20 x max_ms_per_chan (6s by default), which
+    // is too short while connected, so allow 12s
+    const int started = WiFi.scanNetworks(true, false, false, 600);
+    scanning = (started == WIFI_SCAN_RUNNING);
+    Serial.printf("Scan start: %d, status %d\n", started, (int)WiFi.status());
+    scanStartMs = millis();
+}
+
+// Called from loop(): picks up the finished scan without blocking
+void updateScan()
+{
+    if (!scanning)
+        return;
+
+    const int found = WiFi.scanComplete();
+
+    if (found == WIFI_SCAN_RUNNING && millis() - scanStartMs < SCAN_TIMEOUT_MS)
+        return;
+
+    Serial.printf("Scan done: %d after %lu ms\n", found, millis() - scanStartMs);
+
+    scanning = false;
+    scanList.clear();
+
+    const bool online = (WiFi.status() == WL_CONNECTED);
+    uint8_t connectedBssid[6] = {0};
+    if (online)
+        memcpy(connectedBssid, WiFi.BSSID(), 6);
+
+    for (int i = 0; i < found; i++)
+    {
+        ScanEntry entry;
+        strlcpy(entry.ssid, WiFi.SSID(i).c_str(), sizeof(entry.ssid));
+        entry.rssi = WiFi.RSSI(i);
+        entry.connected = online && memcmp(WiFi.BSSID(i), connectedBssid, 6) == 0;
+        scanList.push_back(entry);
+    }
+
+    // Results are copied, so release the driver's copy now (also on failure)
+    WiFi.scanDelete();
+
+    std::sort(scanList.begin(), scanList.end(), [](const ScanEntry &a, const ScanEntry &b)
+    {
+        return a.rssi > b.rssi;
+    });
+
+    state.networkCount = (int)scanList.size();
+
+    if (state.currentScreen == SCREEN_SCAN)
+        drawCurrentScreen();
+}
 void drawScanScreen()
 {
     clearScreen(COLOR_BACKGROUND);
@@ -52,6 +112,16 @@ void drawScanScreen()
     setDefaultFont();
     gfx->setTextColor(COLOR_TEXT);
     gfx->setTextSize(1);
+
+    if (scanning)
+    {
+        gfx->setCursor(10, 36);
+        gfx->println("Scanning...");
+
+        drawNav1("Back");
+        drawNav4("Home");
+        return;
+    }
 
     const int pageCount = scanPageCount();
 
@@ -69,24 +139,18 @@ void drawScanScreen()
     gfx->setCursor(10, 36);
     gfx->println(buffer);
 
-    const String connectedBssid = WiFi.BSSIDstr();
     const int firstRow = state.scanPage * SCAN_ROWS_PER_PAGE;
 
-    for (int row = 0; row < SCAN_ROWS_PER_PAGE && firstRow + row < (int)scanOrder.size(); row++)
+    for (int row = 0; row < SCAN_ROWS_PER_PAGE && firstRow + row < (int)scanList.size(); row++)
     {
-        const int i = scanOrder[firstRow + row];
+        const ScanEntry &entry = scanList[firstRow + row];
 
         gfx->setCursor(10, SCAN_FIRST_LINE_Y + (row * SCAN_LINE_HEIGHT));
+        gfx->setTextColor(entry.connected ? COLOR_OK : COLOR_TEXT);
 
-        const bool connected = (WiFi.status() == WL_CONNECTED) && (WiFi.BSSIDstr(i) == connectedBssid);
-        gfx->setTextColor(connected ? COLOR_OK : COLOR_TEXT);
-
-        gfx->print(WiFi.SSID(i));
-
+        gfx->print(entry.ssid);
         gfx->print(" ");
-
-        gfx->print(WiFi.RSSI(i));
-
+        gfx->print(entry.rssi);
         gfx->println(" dBm");
     }
     setDefaultFont();
@@ -104,7 +168,7 @@ void drawScanScreen()
 
 void enterScanScreen()
 {
-    performScan();
+    startScan();
 
     state.currentScreen = SCREEN_SCAN;
     drawCurrentScreen();
@@ -116,7 +180,6 @@ void handleScanTouch(int x, int y)
     if (navPressed1(x, y))
     {
         enterWifiStatusScreen();
-        delay(300);
     }
 
     // Next page button (only present when there is more than one page)
@@ -124,14 +187,12 @@ void handleScanTouch(int x, int y)
     {
         state.scanPage = (state.scanPage + 1) % scanPageCount();
         drawCurrentScreen();
-        delay(300);
     }
 
     // Rescan button
     else if (navPressed3(x, y))
     {
-        performScan();
+        startScan();
         drawCurrentScreen();
-        delay(300);
     }
 }

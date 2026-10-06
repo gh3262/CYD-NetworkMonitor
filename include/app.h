@@ -15,7 +15,8 @@ enum Screen
     SCREEN_WIFI_STATUS,
     SCREEN_SCAN,
     SCREEN_SYSTEM,
-    SCREEN_TOOLS
+    SCREEN_TOOLS,
+    SCREEN_COUNT   // keep last
 };
 
 struct AppState
@@ -25,8 +26,6 @@ struct AppState
     int scanPage;
     int gatewayPingMs;
     int internetPingMs;
-    String currentSSID;
-    int currentRSSI;
 };
 
 const int PING_RUNNING = -3;
@@ -44,6 +43,8 @@ extern AppState state;
 // ====================================================
 
 void drawCurrentScreen();
+// Redraws only the result rows (pings, NTP status) of the visible screen
+void refreshCurrentScreenResults();
 
 // ====================================================
 // Screens (src/screens/)
@@ -61,12 +62,14 @@ void handleHomeTouch(int x, int y);
 void drawWifiStatusScreen();
 void enterWifiStatusScreen();
 void handleWifiStatusTouch(int x, int y);
+void refreshWifiStatusResults();
 
 // wifi_scan_screen.cpp
-void performScan();
 void drawScanScreen();
 void enterScanScreen();
 void handleScanTouch(int x, int y);
+bool scanInProgress();
+void updateScan();
 
 // system_screen.cpp
 void drawSystemScreen();
@@ -77,7 +80,12 @@ void handleSystemTouch(int x, int y);
 void drawToolsScreen();
 void enterToolsScreen();
 void handleToolsTouch(int x, int y);
-void performGatewayPing();
-void performInternetPing();
+void refreshToolsResults();
+
+// Background jobs: each start*() returns at once, and
+// updateBackgroundJobs() (called from loop) redraws when one finishes
+void startPings();
+void startNtpSync();
+void updateBackgroundJobs();
 
 #endif

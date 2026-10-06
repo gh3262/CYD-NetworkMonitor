@@ -9,7 +9,7 @@ const char* password = WIFI_PASSWORD;
 AppState state = {SCREEN_HOME, 0, 0, PING_NOT_RUN, PING_NOT_RUN};
 
 // Connection
-void connectWiFi();
+bool connectWiFi();
 
 // Diagnostics
 void colorTest();
@@ -52,9 +52,9 @@ void setup()
 
     showSplash("Network Status");
 
-    connectWiFi();
+    const bool wifiOk = connectWiFi();
 
-    if (!syncTime())
+    if (wifiOk && !syncTime())
         Serial.println("Time synchronization failed; start time unavailable.");
 
     //colorTest();
@@ -64,14 +64,38 @@ void setup()
     drawCurrentScreen();
 }
 
-void connectWiFi()
+static const unsigned long WIFI_CONNECT_TIMEOUT_MS = 15000;
+static const unsigned long WIFI_RETRY_INTERVAL_MS = 10000;
+
+static void showSplashStatus(const char* text)
+{
+    gfx->fillRect(0, 120, SCREEN_WIDTH, 40, COLOR_BACKGROUND);
+    centerText(text, 130, COLOR_TEXT, 1);
+}
+
+bool connectWiFi()
 {
     networkConnecting();
+    showSplashStatus("Connecting to WiFi...");
 
+    WiFi.mode(WIFI_STA);
+    WiFi.setAutoReconnect(true);
     WiFi.begin(ssid, password);
+
+    const unsigned long start = millis();
 
     while (WiFi.status() != WL_CONNECTED)
     {
+        if (millis() - start > WIFI_CONNECT_TIMEOUT_MS)
+        {
+            networkDisconnected();
+            showSplashStatus("WiFi connection failed");
+            Serial.println();
+            Serial.println("WiFi connection timed out");
+            delay(1500);
+            return false;
+        }
+
         delay(500);
         Serial.print(".");
     }
@@ -80,32 +104,84 @@ void connectWiFi()
 
     Serial.println();
     Serial.println("WiFi Connected");
+    return true;
 }
+
+// Called from loop(): keeps the LED honest and retries without blocking
+static void maintainWiFi()
+{
+    // A pending reconnect would abort a running scan
+    if (scanInProgress())
+        return;
+
+    static bool wasConnected = true;
+    static unsigned long lastRetry = 0;
+
+    const bool connected = (WiFi.status() == WL_CONNECTED);
+
+    if (connected)
+    {
+        if (!wasConnected)
+        {
+            Serial.println("WiFi reconnected");
+            networkSignalLED(WiFi.RSSI());
+
+            // Time was never set if the boot-time sync was skipped or failed
+            if (synchronizedStartDateTime()[0] == '\0')
+                startNtpSync();
+
+            drawCurrentScreen();
+        }
+    }
+    else
+    {
+        if (wasConnected)
+        {
+            Serial.println("WiFi lost");
+            networkDisconnected();
+            lastRetry = millis();
+        }
+        else if (millis() - lastRetry > WIFI_RETRY_INTERVAL_MS)
+        {
+            lastRetry = millis();
+            WiFi.begin(ssid, password);
+        }
+    }
+
+    wasConnected = connected;
+}
+
+// One entry per Screen, in enum order
+struct ScreenDef
+{
+    void (*draw)();
+    void (*handleTouch)(int x, int y);
+    void (*refreshResults)();   // nullptr when the screen has no live result rows
+    bool hasHomeButton;
+};
+
+static const ScreenDef screens[] = {
+    /* SCREEN_HOME        */ { drawHomeScreen,       handleHomeTouch,       nullptr,                    false },
+    /* SCREEN_WIFI_STATUS */ { drawWifiStatusScreen, handleWifiStatusTouch, refreshWifiStatusResults,   true  },
+    /* SCREEN_SCAN        */ { drawScanScreen,       handleScanTouch,       nullptr,                    true  },
+    /* SCREEN_SYSTEM      */ { drawSystemScreen,     handleSystemTouch,     nullptr,                    true  },
+    /* SCREEN_TOOLS       */ { drawToolsScreen,      handleToolsTouch,      refreshToolsResults,        true  },
+};
+
+static_assert(sizeof(screens) / sizeof(screens[0]) == SCREEN_COUNT,
+              "screens[] must have one entry per Screen");
 
 void drawCurrentScreen()
 {
-    switch (state.currentScreen)
-    {
-        case SCREEN_HOME:
-            drawHomeScreen();
-            break;
+    screens[state.currentScreen].draw();
+}
 
-        case SCREEN_WIFI_STATUS:
-            drawWifiStatusScreen();
-            break;
+void refreshCurrentScreenResults()
+{
+    const ScreenDef &screen = screens[state.currentScreen];
 
-        case SCREEN_SCAN:
-            drawScanScreen();
-            break;
-
-        case SCREEN_SYSTEM:
-            drawSystemScreen();
-            break;
-
-        case SCREEN_TOOLS:
-            drawToolsScreen();
-            break;
-    }
+    if (screen.refreshResults)
+        screen.refreshResults();
 }
 
 void colorTest()
@@ -123,52 +199,33 @@ void colorTest()
 
 static void handleTouch(int x, int y)
 {
-    if (state.currentScreen == SCREEN_HOME)
-    {
-        handleHomeTouch(x, y);
-        return;
-    }
+    const ScreenDef &screen = screens[state.currentScreen];
 
     // Home button (present on every screen except Home)
-    if (navPressed4(x, y))
+    if (screen.hasHomeButton && navPressed4(x, y))
     {
         enterHomeScreen();
-        delay(300);
         return;
     }
 
-    switch (state.currentScreen)
-    {
-        case SCREEN_WIFI_STATUS:
-            handleWifiStatusTouch(x, y);
-            break;
-
-        case SCREEN_SCAN:
-            handleScanTouch(x, y);
-            break;
-
-        case SCREEN_SYSTEM:
-            handleSystemTouch(x, y);
-            break;
-
-        case SCREEN_TOOLS:
-            handleToolsTouch(x, y);
-            break;
-
-        default:
-            break;
-    }
+    screen.handleTouch(x, y);
 }
-
 void loop()
 {
     int x, y;
+    static bool touchArmed = true;
+    static unsigned long lastTouchMs = 0;
+
+    maintainWiFi();
+    updateScan();
+    updateBackgroundJobs();
 
     static int lastMinute = -1;
 
     struct tm timeinfo;
 
-    if (getLocalTime(&timeinfo))
+    // Zero timeout: don't stall the UI when the clock was never set
+    if (getLocalTime(&timeinfo, 0))
     {
         if (timeinfo.tm_min != lastMinute)
         {
@@ -180,11 +237,23 @@ void loop()
 
     if (getTouch(x, y))
     {
-        Serial.print("Touch: ");
-        Serial.print(x);
-        Serial.print(",");
-        Serial.println(y);
+        lastTouchMs = millis();
 
-        handleTouch(x, y);
+        // Act once per press; ignore the finger while it stays down
+        if (touchArmed)
+        {
+            touchArmed = false;
+
+            Serial.print("Touch: ");
+            Serial.print(x);
+            Serial.print(",");
+            Serial.println(y);
+
+            handleTouch(x, y);
+        }
+    }
+    else if (!touchArmed && millis() - lastTouchMs > TOUCH_RELEASE_MS)
+    {
+        touchArmed = true;
     }
 }

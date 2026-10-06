@@ -24,6 +24,5 @@ void handleHomeTouch(int x, int y)
     if (navPressed1(x, y))
     {
         enterWifiStatusScreen();
-        delay(300);
     }
 }

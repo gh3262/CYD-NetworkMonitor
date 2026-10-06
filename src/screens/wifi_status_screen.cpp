@@ -15,48 +15,13 @@ static void printPingValue(int pingMs)
     }
 }
 
-void drawWifiStatusScreen()
+// Ping and health rows, redrawn on their own when results change
+static void drawPingRows()
 {
-    clearScreen(COLOR_BACKGROUND);
-
-    titleBar(
-        "WIFI STATUS",
-        COLOR_HEADER_BG,
-        COLOR_HEADER_TEXT);
-
     setBodyFont();
     gfx->setTextSize(1);
+    gfx->fillRect(0, 137, SCREEN_WIDTH, 53, COLOR_BACKGROUND);
     gfx->setTextColor(COLOR_TEXT);
-
-    gfx->setCursor(10, 50);
-    gfx->print("SSID: ");
-    gfx->println(WiFi.SSID());
-
-    gfx->setCursor(10, 70);
-    gfx->print("IP: ");
-    gfx->println(WiFi.localIP());
-
-    gfx->setCursor(10, 90);
-    gfx->print("RSSI: ");
-
-    const int rssi = WiFi.RSSI();
-    if (rssi > -65)
-        gfx->setTextColor(COLOR_OK);
-    else if (rssi > -80)
-        gfx->setTextColor(COLOR_WARNING);
-    else
-        gfx->setTextColor(COLOR_ERROR);
-
-    gfx->print(rssi);
-    gfx->println(" dBm");
-    gfx->setTextColor(COLOR_TEXT);
-
-    gfx->setCursor(10, 110);
-    gfx->println("Uptime:");
-    gfx->setCursor(20, 130);
-    gfx->print(formatUptime());
-    gfx->print("   ");
-    gfx->println(startDateTimeString());
 
     gfx->setCursor(10, 150);
     gfx->print("Ping: ");
@@ -105,6 +70,61 @@ void drawWifiStatusScreen()
     gfx->setTextColor(COLOR_TEXT);
     setDefaultFont();
     gfx->setTextSize(2);
+}
+
+void refreshWifiStatusResults()
+{
+    drawPingRows();
+}
+
+void drawWifiStatusScreen()
+{
+    clearScreen(COLOR_BACKGROUND);
+
+    titleBar(
+        "WIFI STATUS",
+        COLOR_HEADER_BG,
+        COLOR_HEADER_TEXT);
+
+    setBodyFont();
+    gfx->setTextSize(1);
+    gfx->setTextColor(COLOR_TEXT);
+
+    gfx->setCursor(10, 50);
+    gfx->print("SSID: ");
+    gfx->println(WiFi.SSID());
+
+    gfx->setCursor(10, 70);
+    gfx->print("IP: ");
+    gfx->println(WiFi.localIP());
+
+    gfx->setCursor(10, 90);
+    gfx->print("RSSI: ");
+
+    const int rssi = WiFi.RSSI();
+    if (rssi > -65)
+        gfx->setTextColor(COLOR_OK);
+    else if (rssi > -80)
+        gfx->setTextColor(COLOR_WARNING);
+    else
+        gfx->setTextColor(COLOR_ERROR);
+
+    gfx->print(rssi);
+    gfx->println(" dBm");
+    gfx->setTextColor(COLOR_TEXT);
+
+    gfx->setCursor(10, 110);
+    gfx->println("Uptime:");
+    gfx->setCursor(20, 130);
+    gfx->print(formatUptime());
+    gfx->print("   ");
+    gfx->println(startDateTimeString());
+
+    drawPingRows();
+
+    gfx->setTextColor(COLOR_TEXT);
+    setDefaultFont();
+    gfx->setTextSize(2);
 
     drawNav1("System");
     drawNav2("Scan");
@@ -124,27 +144,18 @@ void handleWifiStatusTouch(int x, int y)
     if (navPressed1(x, y))
     {
         enterSystemScreen();
-        delay(300);
     }
 
     // Scan button
     else if (navPressed2(x, y))
     {
         enterScanScreen();
-        delay(300);
     }
 
     // Refresh button
     else if (navPressed3(x, y))
     {
-        state.gatewayPingMs = PING_RUNNING;
-        state.internetPingMs = PING_RUNNING;
-        drawCurrentScreen();
-
-        performGatewayPing();
-        performInternetPing();
-        drawCurrentScreen();
-        networkSignalLED(WiFi.RSSI());
-        delay(300);
+        startPings();
+        refreshWifiStatusResults();
     }
 }

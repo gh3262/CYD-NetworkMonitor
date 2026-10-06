@@ -5,6 +5,7 @@
 #include <XPT2046_Touchscreen.h>
 
 #include "cyd_pins.h"
+#include "cyd_theme.h"
 
 // ====================================================
 // Touch Object
@@ -32,12 +33,6 @@ inline bool initTouch()
 // Raw Touch Access
 // ====================================================
 
-inline bool touchAvailable()
-{
-    TS_Point p = touch.getPoint();
-    return (p.z > 100);
-}
-
 inline TS_Point getRawTouch()
 {
     return touch.getPoint();
@@ -54,9 +49,9 @@ inline int rawToScreenX(int rawX)
             TOUCH_X_MIN,
             TOUCH_X_MAX,
             0,
-            320),
+            SCREEN_WIDTH),
         0,
-        319);
+        SCREEN_WIDTH - 1);
 }
 
 inline int rawToScreenY(int rawY)
@@ -66,9 +61,9 @@ inline int rawToScreenY(int rawY)
             TOUCH_Y_MIN,
             TOUCH_Y_MAX,
             0,
-            240),
+            SCREEN_HEIGHT),
         0,
-        239);
+        SCREEN_HEIGHT - 1);
 }
 
 // ====================================================
@@ -91,7 +86,7 @@ inline bool getTouch(int &x, int &y)
 {
     TS_Point p = touch.getPoint();
 
-    if (p.z < 100)
+    if (p.z < TOUCH_MIN_PRESSURE)
         return false;
 
     x = rawToScreenX(p.x);

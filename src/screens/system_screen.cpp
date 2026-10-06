@@ -49,20 +49,17 @@ void handleSystemTouch(int x, int y)
     if (navPressed1(x, y))
     {
         enterWifiStatusScreen();
-        delay(300);
     }
 
     // Tools button
     else if (navPressed2(x, y))
     {
         enterToolsScreen();
-        delay(300);
     }
 
     // Refresh button
     else if (navPressed3(x, y))
     {
         drawCurrentScreen();
-        delay(300);
     }
 }
