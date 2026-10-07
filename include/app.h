@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include "cyd.h"
+#include "bluetooth/ble_manager.h"
 
 // ====================================================
 // Application State
@@ -85,15 +86,7 @@ void handleToolsTouch(int x, int y);
 void refreshToolsResults();
 
 // bt_le_screen.cpp
-enum BtState
-{
-    BT_DISCONNECTED,
-    BT_PAIRING,
-    BT_CONNECTED
-};
-
-BtState btLeState();
-void updateBtLe();
+void updateBtLe();   // polls the BLE manager, redraws if visible
 void drawBtLeScreen();
 void enterBtLeScreen();
 void handleBtLeTouch(int x, int y);

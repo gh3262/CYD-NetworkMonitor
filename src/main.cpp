@@ -52,6 +52,9 @@ void setup()
 
     showSplash("Network Status");
 
+    if (!bleInit())
+        Serial.println("BLE initialization failed.");
+
     const bool wifiOk = connectWiFi();
 
     if (wifiOk && !syncTime())

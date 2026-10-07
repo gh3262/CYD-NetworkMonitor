@@ -1,38 +1,39 @@
 #include "app.h"
 
-// Placeholder BLE state; real NimBLE calls replace the fake transitions later
-static BtState btState = BT_DISCONNECTED;
-static char bondedName[24] = "";
-static unsigned long pairingStartMs = 0;
-
-static const unsigned long FAKE_PAIRING_MS = 3000;
-static const char *const FAKE_DEVICE_NAME = "Pixel 10";
 static const uint16_t COLOR_DISABLED = 0x7BEF;
-
-BtState btLeState()
-{
-    return btState;
-}
-
-static bool hasBond()
-{
-    return bondedName[0] != '\0';
-}
 
 static void drawStatusRows()
 {
     const char *status = "Disconnected";
     uint16_t statusColor = COLOR_ERROR;
 
-    if (btState == BT_PAIRING)
+    switch (bleState())
     {
+    case BT_ADVERTISING:
+        status = "Advertising...";
+        statusColor = COLOR_WARNING;
+        break;
+    case BT_PAIRING:
         status = "Pairing...";
         statusColor = COLOR_WARNING;
-    }
-    else if (btState == BT_CONNECTED)
-    {
+        break;
+    case BT_CONNECTED:
         status = "Connected";
         statusColor = COLOR_OK;
+        break;
+    default:
+        break;
+    }
+
+    if (bleState() == BT_UNAVAILABLE)
+    {
+        status = "Bluetooth unavailable";
+        statusColor = COLOR_ERROR;
+    }
+    else if (!bleInitialized())
+    {
+        status = "Starting BLE...";
+        statusColor = COLOR_WARNING;
     }
 
     gfx->fillRect(0, 50, SCREEN_WIDTH, 100, COLOR_BACKGROUND);
@@ -49,7 +50,7 @@ static void drawStatusRows()
     gfx->setCursor(10, 119);
     gfx->print("Device:");
     gfx->setCursor(30, 139);
-    gfx->print(hasBond() ? bondedName : "None");
+    gfx->print(bleHasBond() ? bleDeviceName().c_str() : "None");
 
     setDefaultFont();
     gfx->setTextSize(2);
@@ -57,19 +58,22 @@ static void drawStatusRows()
 
 static void drawButtons()
 {
-    const char *primary = "Pair";
+    const char *primary = bleHasBond() ? "Connect" : "Pair";
 
-    if (btState == BT_PAIRING)
-        primary = "Cancel";
-    else if (btState == BT_CONNECTED)
-        primary = "Disconnect";
+    switch (bleState())
+    {
+    case BT_ADVERTISING: primary = "Stop";       break;
+    case BT_PAIRING:     primary = "Cancel";     break;
+    case BT_CONNECTED:   primary = "Disconnect"; break;
+    default:             break;
+    }
 
-    if (btState == BT_DISCONNECTED && hasBond())
-        drawButton(NAV_X1, NAV_Y, NAV_WIDTH, NAV_HEIGHT, "Pair", COLOR_DISABLED, CYD_BLACK);
-    else
+    if (bleInitialized())
         drawNav1(primary);
+    else
+        drawButton(NAV_X1, NAV_Y, NAV_WIDTH, NAV_HEIGHT, primary, COLOR_DISABLED, CYD_BLACK);
 
-    if (hasBond())
+    if (bleHasBond())
         drawNav2("Forget");
     else
         drawButton(NAV_X2, NAV_Y, NAV_WIDTH, NAV_HEIGHT, "Forget", COLOR_DISABLED, CYD_BLACK);
@@ -94,21 +98,26 @@ void enterBtLeScreen()
 
 void handleBtLeTouch(int x, int y)
 {
-    // Pair / Cancel / Disconnect
+    // Pair / Connect / Stop / Cancel / Disconnect
     if (navPressed1(x, y))
     {
-        if (btState == BT_DISCONNECTED)
-        {
-            // One device at a time: Forget must come first
-            if (hasBond())
-                return;
+        if (!bleInitialized())
+            return;
 
-            btState = BT_PAIRING;
-            pairingStartMs = millis();
-        }
-        else
+        switch (bleState())
         {
-            btState = BT_DISCONNECTED;
+        case BT_DISCONNECTED:
+            if (bleHasBond())
+                bleStartAdvertising();
+            else
+                bleStartPairing();
+            break;
+        case BT_CONNECTED:
+            bleDisconnect();
+            break;
+        default:
+            bleStop();
+            break;
         }
         drawCurrentScreen();
     }
@@ -116,30 +125,22 @@ void handleBtLeTouch(int x, int y)
     // Forget
     else if (navPressed2(x, y))
     {
-        if (hasBond())
+        if (bleInitialized() && bleHasBond())
         {
-            bondedName[0] = '\0';
-            btState = BT_DISCONNECTED;
+            bleForgetBond();
             drawCurrentScreen();
         }
     }
 
-    // BT HID button
+    // HID button
     else if (navPressed3(x, y))
     {
         enterBtHidScreen();
     }
 }
 
-// Called from loop(): completes the fake pairing after a delay
 void updateBtLe()
 {
-    if (btState == BT_PAIRING && millis() - pairingStartMs > FAKE_PAIRING_MS)
-    {
-        btState = BT_CONNECTED;
-        strncpy(bondedName, FAKE_DEVICE_NAME, sizeof(bondedName) - 1);
-
-        if (state.currentScreen == SCREEN_BT_LE)
-            drawCurrentScreen();
-    }
+    if (bleUpdate() && state.currentScreen == SCREEN_BT_LE)
+        drawCurrentScreen();
 }

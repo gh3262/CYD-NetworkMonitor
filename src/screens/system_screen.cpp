@@ -48,7 +48,7 @@ void handleSystemTouch(int x, int y)
     // Back button
     if (navPressed1(x, y))
     {
-        enterWifiStatusScreen();
+        enterHomeScreen();
     }
 
     // Tools button

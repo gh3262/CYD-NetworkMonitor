@@ -126,9 +126,8 @@ void drawWifiStatusScreen()
     setDefaultFont();
     gfx->setTextSize(2);
 
-    drawNav1("System");
-    drawNav2("Scan");
-    drawNav3("Refresh");
+    drawNav1("Scan");
+    drawNav2("Refresh");
     drawNav4("Home");
 }
 
@@ -140,20 +139,14 @@ void enterWifiStatusScreen()
 
 void handleWifiStatusTouch(int x, int y)
 {
-    // System button
-    if (navPressed1(x, y))
-    {
-        enterSystemScreen();
-    }
-
     // Scan button
-    else if (navPressed2(x, y))
+    if (navPressed1(x, y))
     {
         enterScanScreen();
     }
 
     // Refresh button
-    else if (navPressed3(x, y))
+    else if (navPressed2(x, y))
     {
         startPings();
         refreshWifiStatusResults();
