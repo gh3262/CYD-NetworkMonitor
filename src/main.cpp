@@ -166,7 +166,9 @@ static const ScreenDef screens[] = {
     /* SCREEN_SCAN        */ { drawScanScreen,       handleScanTouch,       nullptr,                    true  },
     /* SCREEN_SYSTEM      */ { drawSystemScreen,     handleSystemTouch,     nullptr,                    true  },
     /* SCREEN_TOOLS       */ { drawToolsScreen,      handleToolsTouch,      refreshToolsResults,        true  },
-};
+        /* SCREEN_BT_LE       */ { drawBtLeScreen,       handleBtLeTouch,       nullptr,                    true  },
+    /* SCREEN_BT_HID      */ { drawBtHidScreen,      handleBtHidTouch,      nullptr,                    true  },
+    };
 
 static_assert(sizeof(screens) / sizeof(screens[0]) == SCREEN_COUNT,
               "screens[] must have one entry per Screen");

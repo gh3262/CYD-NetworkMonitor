@@ -10,6 +10,7 @@ void drawHomeScreen()
         COLOR_HEADER_TEXT);
 
     drawNav1("WiFi");
+    drawNav2("BT LE");
 }
 
 void enterHomeScreen()
@@ -24,5 +25,11 @@ void handleHomeTouch(int x, int y)
     if (navPressed1(x, y))
     {
         enterWifiStatusScreen();
+    }
+
+    // BT LE button
+    else if (navPressed2(x, y))
+    {
+        enterBtLeScreen();
     }
 }

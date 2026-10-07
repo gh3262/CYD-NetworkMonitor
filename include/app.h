@@ -16,6 +16,8 @@ enum Screen
     SCREEN_SCAN,
     SCREEN_SYSTEM,
     SCREEN_TOOLS,
+    SCREEN_BT_LE,
+    SCREEN_BT_HID,
     SCREEN_COUNT   // keep last
 };
 
@@ -81,6 +83,16 @@ void drawToolsScreen();
 void enterToolsScreen();
 void handleToolsTouch(int x, int y);
 void refreshToolsResults();
+
+// bt_le_screen.cpp
+void drawBtLeScreen();
+void enterBtLeScreen();
+void handleBtLeTouch(int x, int y);
+
+// bt_hid_screen.cpp
+void drawBtHidScreen();
+void enterBtHidScreen();
+void handleBtHidTouch(int x, int y);
 
 // Background jobs: each start*() returns at once, and
 // updateBackgroundJobs() (called from loop) redraws when one finishes
