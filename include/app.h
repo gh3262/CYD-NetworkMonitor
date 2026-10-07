@@ -85,6 +85,15 @@ void handleToolsTouch(int x, int y);
 void refreshToolsResults();
 
 // bt_le_screen.cpp
+enum BtState
+{
+    BT_DISCONNECTED,
+    BT_PAIRING,
+    BT_CONNECTED
+};
+
+BtState btLeState();
+void updateBtLe();
 void drawBtLeScreen();
 void enterBtLeScreen();
 void handleBtLeTouch(int x, int y);

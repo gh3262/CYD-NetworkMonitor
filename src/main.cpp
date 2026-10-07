@@ -220,6 +220,7 @@ void loop()
 
     maintainWiFi();
     updateScan();
+    updateBtLe();
     updateBackgroundJobs();
 
     static int lastMinute = -1;
