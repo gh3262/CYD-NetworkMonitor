@@ -3,6 +3,7 @@
 static const unsigned long DELAY_COUNTDOWN_MS = 5000;
 static const unsigned long SERIES_SHOT_INTERVAL_MS = 2000;
 static const int SERIES_SHOT_COUNT = 5;
+static const unsigned long SHUTTER_FEEDBACK_MS = 300;
 
 enum HidSequence
 {
@@ -17,6 +18,16 @@ static unsigned long sequenceStartedMs = 0;
 static unsigned long nextSeriesShotMs = 0;
 static int displayedCountdownValue = 0;
 static int displayedShotNumber = 0;
+static bool shutterFeedbackActive = false;
+static unsigned long shutterFeedbackStartedMs = 0;
+
+static void drawShutterButton()
+{
+    drawButton(
+        20, 45, 120, 40, "Shutter",
+        shutterFeedbackActive ? COLOR_BUTTON : COLOR_BUTTON_ALT,
+        COLOR_BUTTON_TEXT);
+}
 
 static void drawSequenceStatus(const char *text)
 {
@@ -65,7 +76,7 @@ void drawBtHidScreen()
 
     titleBar("BLUETOOTH HID");
 
-    drawButton(20, 45, 120, 40, "Shutter", COLOR_BUTTON_ALT, COLOR_BUTTON_TEXT);
+    drawShutterButton();
     drawButton(20, 90, 120, 40, "Delay", COLOR_BUTTON_ALT, COLOR_BUTTON_TEXT);
     drawButton(20, 135, 120, 40, "Series", COLOR_BUTTON_ALT, COLOR_BUTTON_TEXT);
 
@@ -104,8 +115,12 @@ void handleBtHidTouch(int x, int y)
     }
     else if (touchInRect(x, y, 20, 45, 120, 40))
     {
-        if (!bleSendVolumeUp())
+        shutterFeedbackActive = bleSendVolumeUp();
+        if (shutterFeedbackActive)
+            shutterFeedbackStartedMs = millis();
+        else
             Serial.println("BLE HID: volume-up report was not sent.");
+        drawShutterButton();
     }
     else if (touchInRect(x, y, 20, 90, 120, 40))
     {
@@ -125,10 +140,19 @@ void handleBtHidTouch(int x, int y)
 
 void updateBtHid()
 {
+    const unsigned long now = millis();
+    if (shutterFeedbackActive &&
+        now - shutterFeedbackStartedMs >= SHUTTER_FEEDBACK_MS)
+    {
+        shutterFeedbackActive = false;
+        if (state.currentScreen == SCREEN_BT_HID &&
+            activeSequence == HID_SEQUENCE_IDLE)
+            drawShutterButton();
+    }
+
     if (activeSequence == HID_SEQUENCE_IDLE)
         return;
 
-    const unsigned long now = millis();
     if (activeSequence == HID_SEQUENCE_DELAY_COUNTDOWN ||
         activeSequence == HID_SEQUENCE_SERIES_COUNTDOWN)
     {

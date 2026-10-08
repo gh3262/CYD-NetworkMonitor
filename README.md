@@ -59,7 +59,7 @@ Rules:
 - **One device at a time.** Forget the saved device before pairing a new one. A second phone that bonds while one is saved is rejected and its bond deleted.
 - **Reconnect.** A saved device starts advertising at boot and after a dropped link. Stop and Disconnect leave the radio idle until the user presses Connect.
 - **Pairing** is Just Works with bonding and LE Secure Connections, and times out after 120 s. The device advertises as `CYD-HID` with the generic HID appearance.
-- **HID controls.** The HID screen sends a Bluetooth Consumer Control Volume Increment report when Shutter is tapped. Delay waits five seconds before sending; Series waits five seconds and then sends five reports two seconds apart. The countdown and shot number are shown without buttons while a sequence runs. A connected phone and a camera app that treats Volume Up as the shutter are required.
+- **HID controls.** The HID screen sends a Bluetooth Consumer Control Volume Increment report when Shutter is tapped. Shutter flashes green for 300 ms when the report is sent successfully, then returns to red; this confirms sending, not that the phone took a photo. Delay waits five seconds before sending; Series waits five seconds and then sends five reports two seconds apart. The countdown and shot number are shown without buttons while a sequence runs. A connected phone and a camera app that treats Volume Up as the shutter are required.
 - **Device name.** The phone's name is not sent to the CYD, so the Device row shows the bonded Bluetooth address.
 - **Connected** is reported only after the link is encrypted.
 - Connect, authentication and disconnect events are logged to the serial monitor with a `BLE:` prefix.
