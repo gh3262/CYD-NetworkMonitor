@@ -8,9 +8,7 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 |---|---|
 | WiFi status, scan, tools, system info | Working |
 | BLE pairing, bonding, reconnect (NimBLE) | Working, verified with a phone |
-| BLE HID (keyboard/mouse) | Not implemented; the HID page is a placeholder |
-
-**Current milestone:** pairing works. The phone pairs, bonds and then drops the link (disconnect reason `0x213`, remote user terminated) because the CYD exposes no HID service yet. The HID service is the next step.
+| BLE HID consumer control | Implemented; camera shutter support depends on the phone and app |
 
 ## Features
 
@@ -19,8 +17,8 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 - **WiFi Scan**: lists nearby networks sorted by signal strength, paged, with the connected network highlighted. It also works while disconnected.
 - **System**: free heap, minimum heap, sketch size and uptime, with a link to Tools.
 - **Tools**: gateway and internet ping with green/yellow/red results, and an NTP button that re-syncs the clock and reports Synced / Sync failed.
-- **BT LE**: Bluetooth connection manager showing status and the paired device, with Pair / Connect / Stop / Cancel / Disconnect and Forget.
-- **BT HID**: placeholder page ("NOT IMPLEMENTED").
+- **BT LE**: Bluetooth connection manager showing status and the paired device, with Pair / Connect / Stop / Cancel / Disconnect and Forget. HID stays disabled until a phone is connected.
+- **BT HID**: sends a Volume Up consumer-control report for a single shot, after a five-second countdown, or as a five-shot series with two seconds between shots. Countdown and shot progress are shown full-screen.
 - **Clock** in the title bar, updated every minute.
 - **Status LED** shows connection state and signal quality, and WiFi reconnects automatically in the background.
 
@@ -41,10 +39,10 @@ Every screen has four buttons along the bottom. Button 4 is **Home** on every sc
 ```
 HOME
 +-- WiFi
-¦   +-- Status
-¦   +-- Scan
+ï¿½   +-- Status
+ï¿½   +-- Scan
 +-- BT LE
-¦   +-- HID
+ï¿½   +-- HID
 +-- System
     +-- Tools
 ```
@@ -59,7 +57,8 @@ Rules:
 
 - **One device at a time.** Forget the saved device before pairing a new one. A second phone that bonds while one is saved is rejected and its bond deleted.
 - **Reconnect.** A saved device starts advertising at boot and after a dropped link. Stop and Disconnect leave the radio idle until the user presses Connect.
-- **Pairing** is Just Works with bonding and LE Secure Connections, and times out after 120 s. The device advertises as `CYD-HID` with the keyboard appearance.
+- **Pairing** is Just Works with bonding and LE Secure Connections, and times out after 120 s. The device advertises as `CYD-HID` with the generic HID appearance.
+- **HID controls.** The HID screen sends a Bluetooth Consumer Control Volume Increment report when Shutter is tapped. Delay waits five seconds before sending; Series waits five seconds and then sends five reports two seconds apart. The countdown and shot number are shown without buttons while a sequence runs. A connected phone and a camera app that treats Volume Up as the shutter are required.
 - **Device name.** The phone's name is not sent to the CYD, so the Device row shows the bonded Bluetooth address.
 - **Connected** is reported only after the link is encrypted.
 - Connect, authentication and disconnect events are logged to the serial monitor with a `BLE:` prefix.
@@ -81,7 +80,7 @@ Rules:
 
 Library and platform versions are pinned in `platformio.ini` (espressif32 7.1.3, GFX Library for Arduino 1.5.7, Adafruit GFX 1.12.6, ESP32Ping 1.7, NimBLE-Arduino 2.5.1, and XPT2046_Touchscreen at a fixed commit).
 
-If a phone keeps stale pairing data, press Forget on the CYD and also remove `CYD-HID` in the phone's Bluetooth settings.
+If a phone keeps stale pairing or HID service data, press Forget on the CYD and also remove `CYD-HID` in the phone's Bluetooth settings, then pair again.
 
 ## Project layout
 
@@ -124,7 +123,6 @@ Each screen file provides `draw*`, `enter*` and `handle*Touch` functions. `main.
 
 ## Roadmap
 
-- BLE HID service (report map, input reports) so the phone keeps the connection
-- HID functions: keyboard, mouse, consumer/media keys, camera remote
+- HID keyboard and mouse reports
 - MQTT and Adafruit IO integration
 - Additional diagnostics

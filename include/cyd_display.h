@@ -3,6 +3,7 @@
 #include <Arduino_GFX_Library.h>
 #include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeSans12pt7b.h>
+#include <Fonts/FreeSansBold24pt7b.h>
 #include "cyd_pins.h"
 #include "cyd_helpers.h"
 #include "cyd_theme.h"

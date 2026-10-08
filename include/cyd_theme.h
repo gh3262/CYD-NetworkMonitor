@@ -17,6 +17,7 @@
 #define COLOR_ERROR        CYD_RED
 
 #define COLOR_BUTTON       CYD_GREEN
+#define COLOR_BUTTON_ALT   CYD_YELLOW
 #define COLOR_BUTTON_TEXT  CYD_BLACK
 
 // ====================================================
@@ -31,6 +32,7 @@
 #define FONT_SANS_LARGE (&FreeSans18pt7b)
 #define FONT_MONO_SMALL (&FreeMono9pt7b)
 #define FONT_MONO_NORMAL (&FreeMono12pt7b)
+#define FONT_EXTRA_LARGE (&FreeSansBold24pt7b)
 
 // ====================================================
 // Screen Layout

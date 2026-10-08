@@ -32,6 +32,7 @@ void bleStartAdvertising();   // bond: wait for the saved device
 void bleStop();               // cancel pairing / stop advertising
 void bleDisconnect();
 void bleForgetBond();
+bool bleSendVolumeUp();
 
 // Call from loop(); returns true when the state or device changed
 bool bleUpdate();

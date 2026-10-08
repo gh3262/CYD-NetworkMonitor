@@ -207,7 +207,8 @@ static void handleTouch(int x, int y)
     const ScreenDef &screen = screens[state.currentScreen];
 
     // Home button (present on every screen except Home)
-    if (screen.hasHomeButton && navPressed4(x, y))
+    if (screen.hasHomeButton && navPressed4(x, y) &&
+        !(state.currentScreen == SCREEN_BT_HID && btHidSequenceActive()))
     {
         enterHomeScreen();
         return;
@@ -224,6 +225,7 @@ void loop()
     maintainWiFi();
     updateScan();
     updateBtLe();
+    updateBtHid();
     updateBackgroundJobs();
 
     static int lastMinute = -1;
@@ -235,7 +237,8 @@ void loop()
     {
         if (timeinfo.tm_min != lastMinute)
         {
-            drawClock();
+            if (state.currentScreen != SCREEN_BT_HID || !btHidSequenceActive())
+                drawClock();
 
             lastMinute = timeinfo.tm_min;
         }

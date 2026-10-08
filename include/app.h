@@ -95,6 +95,8 @@ void handleBtLeTouch(int x, int y);
 void drawBtHidScreen();
 void enterBtHidScreen();
 void handleBtHidTouch(int x, int y);
+void updateBtHid();
+bool btHidSequenceActive();
 
 // Background jobs: each start*() returns at once, and
 // updateBackgroundJobs() (called from loop) redraws when one finishes

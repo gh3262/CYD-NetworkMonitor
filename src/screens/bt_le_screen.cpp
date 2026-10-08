@@ -78,7 +78,10 @@ static void drawButtons()
     else
         drawButton(NAV_X2, NAV_Y, NAV_WIDTH, NAV_HEIGHT, "Forget", COLOR_DISABLED, CYD_BLACK);
 
-    drawNav3("HID");
+    if (bleState() == BT_CONNECTED)
+        drawNav3("HID");
+    else
+        drawButton(NAV_X3, NAV_Y, NAV_WIDTH, NAV_HEIGHT, "HID", COLOR_DISABLED, CYD_BLACK);
     drawNav4("Home");
 }
 
@@ -135,7 +138,8 @@ void handleBtLeTouch(int x, int y)
     // HID button
     else if (navPressed3(x, y))
     {
-        enterBtHidScreen();
+        if (bleState() == BT_CONNECTED)
+            enterBtHidScreen();
     }
 }
 
