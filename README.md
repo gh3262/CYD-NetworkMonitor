@@ -14,6 +14,7 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 
 - **Home screen** as the landing page, with navigation to each branch.
 - **WiFi Status**: SSID, IP, color-coded signal strength (RSSI), uptime and start time, and a `Ping: gateway / internet ms` line with an overall Health indicator (ONLINE / LOCAL ONLY / OFFLINE). Refresh runs the pings.
+- **WiFi connection**: scans for configured networks and connects to the strongest signal. If none are in range, startup continues offline and the device retries scans periodically.
 - **WiFi Scan**: lists nearby networks sorted by signal strength, paged, with the connected network highlighted. It also works while disconnected.
 - **System**: free heap, minimum heap, sketch size and uptime, with a link to Tools.
 - **Tools**: gateway and internet ping with green/yellow/red results, and an NTP button that re-syncs the clock and reports Synced / Sync failed.
@@ -73,7 +74,7 @@ Rules:
 
 1. Install [PlatformIO](https://platformio.org/).
 2. Copy `include/credentials_template.h` to `include/credentials.h` (it is gitignored) and fill in:
-   - `WIFI_SSID` and `WIFI_PASSWORD`
+   - Add each known WiFi network's SSID and password to the `wifiNetworks` array. The device scans and connects to the strongest one in range.
    - `NTP_SERVER_1` and `NTP_SERVER_2`
    - `TZ_STRING`, a POSIX time zone string, for example `CST6CDT,M3.2.0,M11.1.0`
 3. Build and upload: `pio run -t upload`. Open the serial monitor at 115200 baud.

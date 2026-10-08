@@ -3,9 +3,6 @@
 #include "app.h"
 #include "credentials.h"
 
-const char* ssid = WIFI_SSID;
-const char* password = WIFI_PASSWORD;
-
 AppState state = {SCREEN_HOME, 0, 0, PING_NOT_RUN, PING_NOT_RUN};
 
 // Connection
@@ -70,20 +67,100 @@ void setup()
 static const unsigned long WIFI_CONNECT_TIMEOUT_MS = 15000;
 static const unsigned long WIFI_RETRY_INTERVAL_MS = 10000;
 
+struct StrongestKnownNetwork
+{
+    size_t credentialIndex;
+    int32_t rssi;
+    int32_t channel;
+    uint8_t bssid[6];
+};
+
 static void showSplashStatus(const char* text)
 {
     gfx->fillRect(0, 120, SCREEN_WIDTH, 40, COLOR_BACKGROUND);
     centerText(text, 130, COLOR_TEXT, 1);
 }
 
+static bool findStrongestKnownNetwork(StrongestKnownNetwork &strongest)
+{
+    const int16_t found = WiFi.scanNetworks(false, false, false, 300);
+    if (found < 0)
+    {
+        Serial.printf("WiFi scan failed with error %d.\n", found);
+        WiFi.scanDelete();
+        return false;
+    }
+
+    bool haveKnownNetwork = false;
+    for (int16_t networkIndex = 0; networkIndex < found; ++networkIndex)
+    {
+        const String scannedSsid = WiFi.SSID(networkIndex);
+        for (size_t credentialIndex = 0;
+             credentialIndex < WIFI_NETWORK_COUNT;
+             ++credentialIndex)
+        {
+            if (scannedSsid != wifiNetworks[credentialIndex].ssid)
+                continue;
+
+            const int32_t rssi = WiFi.RSSI(networkIndex);
+            if (haveKnownNetwork && rssi <= strongest.rssi)
+                break;
+
+            uint8_t *bssid = WiFi.BSSID(networkIndex);
+            if (!bssid)
+                break;
+
+            strongest.credentialIndex = credentialIndex;
+            strongest.rssi = rssi;
+            strongest.channel = WiFi.channel(networkIndex);
+            memcpy(strongest.bssid, bssid, sizeof(strongest.bssid));
+            haveKnownNetwork = true;
+            break;
+        }
+    }
+
+    WiFi.scanDelete();
+    return haveKnownNetwork;
+}
+
+static bool beginStrongestKnownConnection()
+{
+    StrongestKnownNetwork strongest;
+    if (!findStrongestKnownNetwork(strongest))
+    {
+        Serial.println("WiFi: no configured network found in scan.");
+        return false;
+    }
+
+    const WiFiCredential &credentials = wifiNetworks[strongest.credentialIndex];
+    Serial.printf("WiFi: connecting to strongest known network (%ld dBm).\n",
+                  static_cast<long>(strongest.rssi));
+    WiFi.begin(
+        credentials.ssid,
+        credentials.password,
+        strongest.channel,
+        strongest.bssid);
+    return true;
+}
+
 bool connectWiFi()
 {
     networkConnecting();
-    showSplashStatus("Connecting to WiFi...");
+    showSplashStatus("Scanning for known WiFi...");
 
     WiFi.mode(WIFI_STA);
-    WiFi.setAutoReconnect(true);
-    WiFi.begin(ssid, password);
+    WiFi.setAutoReconnect(false);
+    WiFi.disconnect(false, false);
+    delay(100);
+
+    if (!beginStrongestKnownConnection())
+    {
+        networkDisconnected();
+        showSplashStatus("No known WiFi found");
+        return false;
+    }
+
+    showSplashStatus("Connecting to strongest network...");
 
     const unsigned long start = millis();
 
@@ -95,6 +172,7 @@ bool connectWiFi()
             showSplashStatus("WiFi connection failed");
             Serial.println();
             Serial.println("WiFi connection timed out");
+            WiFi.disconnect(false, false);
             delay(1500);
             return false;
         }
@@ -147,7 +225,7 @@ static void maintainWiFi()
         else if (millis() - lastRetry > WIFI_RETRY_INTERVAL_MS)
         {
             lastRetry = millis();
-            WiFi.begin(ssid, password);
+            beginStrongestKnownConnection();
         }
     }
 
