@@ -129,14 +129,17 @@ void drawScanScreen()
     char buffer[40];
     if (pageCount > 1)
     {
-        snprintf(buffer, sizeof(buffer), "Found %d networks (page %d/%d)",
+        snprintf(buffer, sizeof(buffer), "%d networks (page %d/%d)",
                  state.networkCount, state.scanPage + 1, pageCount);
     }
     else
     {
-        snprintf(buffer, sizeof(buffer), "Found %d networks", state.networkCount < 0 ? 0 : state.networkCount);
+        snprintf(buffer, sizeof(buffer), "%d networks", state.networkCount < 0 ? 0 : state.networkCount);
     }
     gfx->setCursor(10, 36);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
+    gfx->print("Found ");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->println(buffer);
 
     const int firstRow = state.scanPage * SCAN_ROWS_PER_PAGE;

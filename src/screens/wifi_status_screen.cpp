@@ -21,10 +21,11 @@ static void drawPingRows()
     setBodyFont();
     gfx->setTextSize(1);
     gfx->fillRect(0, 137, SCREEN_WIDTH, 53, COLOR_BACKGROUND);
-    gfx->setTextColor(COLOR_TEXT);
 
     gfx->setCursor(10, 150);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("Ping: ");
+    gfx->setTextColor(COLOR_TEXT);
     if (state.gatewayPingMs == PING_RUNNING || state.internetPingMs == PING_RUNNING)
     {
         gfx->print("Pinging...");
@@ -45,7 +46,9 @@ static void drawPingRows()
 
     // Kept above NAV_Y so it doesn't collide with the buttons
     gfx->setCursor(10, 170);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("Health: ");
+    gfx->setTextColor(COLOR_TEXT);
 
     if (state.internetPingMs == PING_NOT_RUN && state.gatewayPingMs == PING_NOT_RUN)
     {
@@ -88,17 +91,21 @@ void drawWifiStatusScreen()
 
     setBodyFont();
     gfx->setTextSize(1);
-    gfx->setTextColor(COLOR_TEXT);
 
     gfx->setCursor(10, 50);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("SSID: ");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->println(WiFi.SSID());
 
     gfx->setCursor(10, 70);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("IP: ");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->println(WiFi.localIP());
 
     gfx->setCursor(10, 90);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("RSSI: ");
 
     const int rssi = WiFi.RSSI();
@@ -114,7 +121,9 @@ void drawWifiStatusScreen()
     gfx->setTextColor(COLOR_TEXT);
 
     gfx->setCursor(10, 110);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->println("Uptime:");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->setCursor(20, 130);
     gfx->print(formatUptime());
     gfx->print("   ");

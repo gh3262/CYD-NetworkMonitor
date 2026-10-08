@@ -317,6 +317,8 @@ void loop()
         {
             if (state.currentScreen != SCREEN_BT_HID || !btHidSequenceActive())
                 drawClock();
+            if (state.currentScreen == SCREEN_HOME)
+                refreshHomeTime();
 
             lastMinute = timeinfo.tm_min;
         }

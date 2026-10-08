@@ -39,16 +39,17 @@ static void drawStatusRows()
     gfx->fillRect(0, 50, SCREEN_WIDTH, 100, COLOR_BACKGROUND);
     setBodyFont();
 
-    gfx->setTextColor(COLOR_TEXT);
     gfx->setCursor(10, 69);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("Status:");
     gfx->setTextColor(statusColor);
     gfx->setCursor(30, 89);
     gfx->print(status);
 
-    gfx->setTextColor(COLOR_TEXT);
     gfx->setCursor(10, 119);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("Device:");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->setCursor(30, 139);
     gfx->print(bleHasBond() ? bleDeviceName().c_str() : "None");
 
@@ -64,7 +65,7 @@ static void drawButtons()
     {
     case BT_ADVERTISING: primary = "Stop";       break;
     case BT_PAIRING:     primary = "Cancel";     break;
-    case BT_CONNECTED:   primary = "Disconnect"; break;
+    case BT_CONNECTED:   primary = "Unlink"; break;
     default:             break;
     }
 

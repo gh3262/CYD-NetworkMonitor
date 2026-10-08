@@ -131,16 +131,19 @@ static void drawPingRows()
     setBodyFont();
     gfx->setTextSize(1);
     gfx->fillRect(0, 35, SCREEN_WIDTH, 50, COLOR_BACKGROUND);
-    gfx->setTextColor(COLOR_TEXT);
 
     gfx->setCursor(10, 51);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("Gateway ");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->print(WiFi.gatewayIP());
     gfx->print(" - "); // Add spacing before the ping result
     drawPingResult(state.gatewayPingMs);
 
     gfx->setCursor(10, 75);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("Internet ");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->print(INTERNET_PING_HOST);
     gfx->print(" - "); // Add spacing before the ping result
     drawPingResult(state.internetPingMs);
@@ -151,10 +154,11 @@ static void drawTimeRow()
     setBodyFont();
     gfx->setTextSize(1);
     gfx->fillRect(0, 124, SCREEN_WIDTH, 20, COLOR_BACKGROUND);
-    gfx->setTextColor(COLOR_TEXT);
 
     gfx->setCursor(10, 139);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("Time: ");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->println(timeSyncStatus);
 }
 
@@ -180,7 +184,9 @@ void drawToolsScreen()
     drawTimeRow();
 
     gfx->setCursor(10, 159);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("RSSI: ");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->print(WiFi.RSSI());
     gfx->println(" dBm");
 

@@ -7,25 +7,32 @@ void drawSystemScreen()
     titleBar("SYSTEM");
 
     setBodyFont();
-    gfx->setTextColor(COLOR_TEXT);
 
     gfx->setCursor(10, 59);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("Free Heap: ");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->print(ESP.getFreeHeap() / 1024);
     gfx->println(" KB");
 
     gfx->setCursor(10, 79);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("Sketch Size: ");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->print(ESP.getSketchSize() / 1024);
     gfx->println(" KB");
 
     gfx->setCursor(10, 99);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->print("Min Heap: ");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->print(ESP.getMinFreeHeap() / 1024);
     gfx->println(" KB");
 
     gfx->setCursor(10, 139);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
     gfx->println("Uptime:");
+    gfx->setTextColor(COLOR_TEXT);
     gfx->setCursor(20, 159);
     gfx->print(formatUptime());
     gfx->print("   ");

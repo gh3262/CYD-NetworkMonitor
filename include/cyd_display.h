@@ -123,7 +123,7 @@ inline void drawButton(
         y,
         w,
         h,
-        6,
+        8,
         buttonColor);
     setBodyFont();
     gfx->setTextColor(textColor);

@@ -60,6 +60,7 @@ void refreshCurrentScreenResults();
 void drawHomeScreen();
 void enterHomeScreen();
 void handleHomeTouch(int x, int y);
+void refreshHomeTime();
 
 // wifi_status_screen.cpp
 void drawWifiStatusScreen();

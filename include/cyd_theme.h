@@ -9,6 +9,7 @@
 
 #define COLOR_BACKGROUND   CYD_NAVY
 #define COLOR_TEXT         CYD_WHITE
+#define COLOR_LABEL_TEXT   CYD_CYAN
 #define COLOR_HEADER_BG    CYD_BLACK
 #define COLOR_HEADER_TEXT  CYD_WHITE
 
@@ -16,9 +17,9 @@
 #define COLOR_WARNING      CYD_YELLOW
 #define COLOR_ERROR        CYD_RED
 
-#define COLOR_BUTTON       CYD_GREEN
-#define COLOR_BUTTON_ALT   CYD_YELLOW
-#define COLOR_BUTTON_TEXT  CYD_BLACK
+#define COLOR_BUTTON       CYD_DARK_GREEN
+#define COLOR_BUTTON_ALT   CYD_DARK_RED
+#define COLOR_BUTTON_TEXT  CYD_WHITE
 
 // ====================================================
 // Font Settings
