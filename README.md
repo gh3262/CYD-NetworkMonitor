@@ -10,6 +10,32 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 | BLE pairing, bonding, reconnect (NimBLE) | Working, verified with a phone |
 | BLE HID consumer control | Implemented; camera shutter support depends on the phone and app |
 
+## New Features
+
+### Bluetooth HID Camera Remote
+
+- Camera shutter release
+- Countdown timer mode
+- Burst photography mode
+- Configurable camera settings
+- Persistent Bluetooth bonding
+- Automatic reconnect
+
+### Bluetooth Architecture
+
+- NimBLE integration
+- BLE Manager abstraction
+- BT LE management screen
+- BT HID application layer
+
+## Existing Features
+
+- WiFi diagnostics
+- WiFi scanner
+- Network tools
+- NTP time synchronization
+- System diagnostics
+
 ## Features
 
 - **Home screen** as the landing page, with navigation to each branch.
