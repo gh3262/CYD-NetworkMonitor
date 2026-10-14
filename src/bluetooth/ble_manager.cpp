@@ -1,5 +1,6 @@
 #include "ble_manager.h"
 #include <atomic>
+#include <esp_system.h>
 #include <NimBLEDevice.h>
 #include <NimBLEHIDDevice.h>
 
@@ -8,7 +9,8 @@
 // BLE host task, so they only touch the volatile fields below; screens read
 // state from the main loop through the accessors.
 
-static const char *const ADV_NAME = "CYD-HID";
+static const char *const ADV_NAME_PREFIX = "CYD-HID";
+static char advName[16] = "CYD-HID";
 static const unsigned long PAIRING_TIMEOUT_MS = 120000;
 static const uint16_t NO_CONN = 0xFFFF;
 static const uint8_t CONSUMER_REPORT_ID = 1;
@@ -150,7 +152,14 @@ bool bleInit()
     if (initialized)
         return true;
 
-    if (!NimBLEDevice::init(ADV_NAME))
+    // Suffix the last byte of the WiFi MAC (as shown on the System screen)
+    // so multiple boards advertise distinct names, e.g. "CYD-HID-EF".
+    uint8_t mac[6];
+    if (esp_read_mac(mac, ESP_MAC_WIFI_STA) == ESP_OK)
+        snprintf(advName, sizeof(advName), "%s-%02X", ADV_NAME_PREFIX, mac[5]);
+    Serial.printf("BLE: advertising as %s\n", advName);
+
+    if (!NimBLEDevice::init(advName))
     {
         setState(BT_UNAVAILABLE);
         return false;
@@ -177,7 +186,7 @@ bool bleInit()
     }
 
     advertising = NimBLEDevice::getAdvertising();
-    advertising->setName(ADV_NAME);
+    advertising->setName(advName);
     advertising->setAppearance(GENERIC_HID);
     if (!advertising->addServiceUUID(hidDevice->getHidService()->getUUID()))
     {

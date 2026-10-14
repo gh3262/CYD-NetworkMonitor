@@ -51,7 +51,7 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 - **WiFi Status**: SSID, IP, color-coded signal strength (RSSI), uptime and start time, and a `Ping: gateway / internet ms` line with an overall Health indicator (ONLINE / LOCAL ONLY / OFFLINE). Refresh runs the pings.
 - **WiFi connection**: scans for configured networks and connects to the strongest signal. If none are in range, startup continues offline and the device retries scans periodically.
 - **WiFi Scan**: lists nearby networks sorted by signal strength, paged, with the connected network highlighted. It also works while disconnected.
-- **System**: free heap, minimum heap, sketch size and uptime, with a link to Tools.
+- **System**: free heap, minimum heap, sketch size, uptime, and the device's WiFi MAC address, with a link to Tools.
 - **Tools**: gateway and internet ping with green/yellow/red results, and an NTP button that re-syncs the clock and reports Synced / Sync failed.
 - **BT LE**: Bluetooth connection manager showing status and the paired device, with Pair / Connect / Stop / Cancel / Disconnect and Forget. HID stays disabled until a phone is connected.
 - **BT HID**: function menu with Camera and Media buttons and one disabled `tbd` placeholder for a future HID function.
@@ -105,7 +105,7 @@ Rules:
 
 - **One device at a time.** Forget the saved device before pairing a new one. A second phone that bonds while one is saved is rejected and its bond deleted.
 - **Reconnect.** A saved device starts advertising at boot and after a dropped link. Stop and Disconnect leave the radio idle until the user presses Connect.
-- **Pairing** is Just Works with bonding and LE Secure Connections, and times out after 120 s. The device advertises as `CYD-HID` with the generic HID appearance.
+- **Pairing** is Just Works with bonding and LE Secure Connections, and times out after 120 s. The device advertises as `CYD-HID-XX` with the generic HID appearance, where `XX` is the last byte of the board's WiFi MAC address in hex (the last two characters of the MAC on the System screen; for MAC `24:6F:28:AB:CD:EF` the name is `CYD-HID-EF`). This keeps multiple boards distinguishable in a phone's Bluetooth list. The name is also printed to the serial monitor at boot.
 - **HID controls.** Open HID, then Camera. The Camera screen sends a Bluetooth Consumer Control Volume Increment report when Shutter is tapped. Shutter flashes green for 300 ms when the report is sent successfully, then returns to red; this confirms sending, not that the phone took a photo. Delay waits the configured number of seconds before sending; Series waits the same delay, then sends the configured number of reports with the configured spacing (default 5 seconds, 5 shots, 2 seconds apart). The countdown and shot number are shown without buttons while a sequence runs. A connected phone and a camera app that treats Volume Up as the shutter are required.
 - **Media keys.** The consumer-control report carries Volume Up, Volume Down, Play/Pause, Next Track, and Previous Track; `bleSendConsumerKey()` presses and releases one. See [Media Control](#media-control).
 - **Device name.** The phone's name is not sent to the CYD, so the Device row shows the bonded Bluetooth address.
@@ -147,11 +147,11 @@ Previous and Next depend on the phone and the media app. Some apps ignore them, 
 Phones save the CYD's list of supported keys (the HID report descriptor) when they first pair. A phone paired with firmware from before Media Control was added only knows about Volume Up, so Play/Pause, Previous, Next, and Vol Down do nothing. Unpair and re-pair to make the phone read the new key list:
 
 1. **Forget on the CYD:** go to **Home > BT LE**, press **Disconnect** if connected, then press **Forget**.
-2. **Forget on the phone:** open the phone's Bluetooth settings and remove `CYD-HID`.
-   - **iPhone:** Settings > Bluetooth > tap the (i) next to `CYD-HID` > **Forget This Device**.
-   - **Android:** Settings > Connected devices (or Bluetooth) > tap the gear next to `CYD-HID` > **Unpair** / **Forget**.
+2. **Forget on the phone:** open the phone's Bluetooth settings and remove `CYD-HID-XX` (the name ends with the last two characters of the MAC on the System screen; older firmware used plain `CYD-HID`).
+   - **iPhone:** Settings > Bluetooth > tap the (i) next to `CYD-HID-XX` > **Forget This Device**.
+   - **Android:** Settings > Connected devices (or Bluetooth) > tap the gear next to `CYD-HID-XX` > **Unpair** / **Forget**.
 3. **Turn the phone's Bluetooth off and back on.** This clears any cached service data.
-4. **Pair again:** on the CYD press **Pair** on the BT LE screen, then select `CYD-HID` in the phone's Bluetooth list within 120 seconds. Accept the pairing prompt.
+4. **Pair again:** on the CYD press **Pair** on the BT LE screen, then select `CYD-HID-XX` in the phone's Bluetooth list within 120 seconds. Accept the pairing prompt.
 5. **Test:** wait until BT LE shows Connected, start some audio on the phone, then open **HID > Media** and press Play/Pause.
 
 If the keys still don't work, restart the phone and repeat steps 1–4. The same steps fix a camera shutter that stops working after a firmware update.
@@ -182,7 +182,7 @@ If the keys still don't work, restart the phone and repeat steps 1–4. The same
 
 Library and platform versions are pinned in `platformio.ini` (espressif32 7.1.3, GFX Library for Arduino 1.5.7, Adafruit GFX 1.12.6, ESP32Ping 1.7, NimBLE-Arduino 2.5.1, and XPT2046_Touchscreen at a fixed commit).
 
-If a phone keeps stale pairing or HID service data, press Forget on the CYD and also remove `CYD-HID` in the phone's Bluetooth settings, then pair again. See [If the media buttons don't work the first time](#if-the-media-buttons-dont-work-the-first-time) for the full steps.
+If a phone keeps stale pairing or HID service data, press Forget on the CYD and also remove `CYD-HID-XX` in the phone's Bluetooth settings, then pair again. See [If the media buttons don't work the first time](#if-the-media-buttons-dont-work-the-first-time) for the full steps.
 
 ## Project layout
 

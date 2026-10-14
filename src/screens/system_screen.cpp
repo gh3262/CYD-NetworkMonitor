@@ -38,6 +38,12 @@ void drawSystemScreen()
     gfx->print("   ");
     gfx->println(startDateTimeString());
 
+    gfx->setCursor(10, 189);
+    gfx->setTextColor(COLOR_LABEL_TEXT);
+    gfx->print("MAC: ");
+    gfx->setTextColor(COLOR_TEXT);
+    gfx->print(WiFi.macAddress());
+
     drawNav1("Back");
     drawNav2("Tools");
     drawNav3("Refresh");
