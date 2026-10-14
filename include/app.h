@@ -19,8 +19,21 @@ enum Screen
     SCREEN_TOOLS,
     SCREEN_BT_LE,
     SCREEN_BT_HID,
+    SCREEN_BT_CAMERA,
+    SCREEN_BT_CAMERA_SETTINGS,
     SCREEN_COUNT   // keep last
 };
+
+struct CameraSettings
+{
+    int delaySeconds;
+    int shotCount;
+    int secondsBetween;
+};
+
+const int CAMERA_SETTING_MIN = 1;
+const int CAMERA_SETTING_MAX = 30;
+const CameraSettings DEFAULT_CAMERA_SETTINGS = {5, 5, 2};
 
 struct AppState
 {
@@ -96,8 +109,20 @@ void handleBtLeTouch(int x, int y);
 void drawBtHidScreen();
 void enterBtHidScreen();
 void handleBtHidTouch(int x, int y);
-void updateBtHid();
-bool btHidSequenceActive();
+
+// bt_camera_screen.cpp
+void drawBtCameraScreen();
+void enterBtCameraScreen();
+void handleBtCameraTouch(int x, int y);
+void updateBtCamera();
+bool btCameraSequenceActive();
+const CameraSettings &btCameraSettings();
+void setBtCameraSettings(const CameraSettings &settings);
+
+// bt_camera_settings_screen.cpp
+void drawBtCameraSettingsScreen();
+void enterBtCameraSettingsScreen();
+void handleBtCameraSettingsTouch(int x, int y);
 
 // Background jobs: each start*() returns at once, and
 // updateBackgroundJobs() (called from loop) redraws when one finishes

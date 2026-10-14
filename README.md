@@ -19,7 +19,9 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 - **System**: free heap, minimum heap, sketch size and uptime, with a link to Tools.
 - **Tools**: gateway and internet ping with green/yellow/red results, and an NTP button that re-syncs the clock and reports Synced / Sync failed.
 - **BT LE**: Bluetooth connection manager showing status and the paired device, with Pair / Connect / Stop / Cancel / Disconnect and Forget. HID stays disabled until a phone is connected.
-- **BT HID**: sends a Volume Up consumer-control report for a single shot, after a five-second countdown, or as a five-shot series with two seconds between shots. Countdown and shot progress are shown full-screen.
+- **BT HID**: function menu with a Camera button and two disabled `tbd` placeholders for future HID functions.
+- **BT Camera**: sends a Volume Up consumer-control report for a single shot, after a configurable countdown, or as a configurable shot series. Countdown and shot progress are shown full-screen.
+- **Camera Settings**: adjusts Delay Seconds, Nbr Shots, and Time Between from 1 to 30. SET applies the values to BT Camera; Reset restores the editor to 5 / 5 / 2. Values are kept until reboot.
 - **Clock** in the title bar, updated every minute.
 - **Status LED** shows connection state and signal quality, and WiFi reconnects automatically in the background.
 
@@ -36,6 +38,10 @@ Every screen has four buttons along the bottom. Button 4 is **Home** on every sc
 | Tools | Back (System) | NTP | Ping | Home |
 | BT LE | Pair / Connect / Stop / Cancel / Disconnect | Forget | HID | Home |
 | BT HID | Back (BT LE) | | | Home |
+| BT Camera | Back (BT HID) | Settings | | Home |
+| Camera Settings | Back (BT Camera) | SET | Reset | Home |
+
+BT HID has three body buttons: **Camera**, **tbd**, **tbd**. Camera opens BT Camera, whose body buttons are **Shutter**, **Delay**, and **Series**.
 
 ```
 HOME
@@ -44,6 +50,8 @@ HOME
 �   +-- Scan
 +-- BT LE
 �   +-- HID
+        +-- Camera
+            +-- Settings
 +-- System
     +-- Tools
 ```
@@ -59,7 +67,7 @@ Rules:
 - **One device at a time.** Forget the saved device before pairing a new one. A second phone that bonds while one is saved is rejected and its bond deleted.
 - **Reconnect.** A saved device starts advertising at boot and after a dropped link. Stop and Disconnect leave the radio idle until the user presses Connect.
 - **Pairing** is Just Works with bonding and LE Secure Connections, and times out after 120 s. The device advertises as `CYD-HID` with the generic HID appearance.
-- **HID controls.** The HID screen sends a Bluetooth Consumer Control Volume Increment report when Shutter is tapped. Shutter flashes green for 300 ms when the report is sent successfully, then returns to red; this confirms sending, not that the phone took a photo. Delay waits five seconds before sending; Series waits five seconds and then sends five reports two seconds apart. The countdown and shot number are shown without buttons while a sequence runs. A connected phone and a camera app that treats Volume Up as the shutter are required.
+- **HID controls.** Open HID, then Camera. The Camera screen sends a Bluetooth Consumer Control Volume Increment report when Shutter is tapped. Shutter flashes green for 300 ms when the report is sent successfully, then returns to red; this confirms sending, not that the phone took a photo. Delay waits the configured number of seconds before sending; Series waits the same delay, then sends the configured number of reports with the configured spacing (default 5 seconds, 5 shots, 2 seconds apart). The countdown and shot number are shown without buttons while a sequence runs. A connected phone and a camera app that treats Volume Up as the shutter are required.
 - **Device name.** The phone's name is not sent to the CYD, so the Device row shows the bonded Bluetooth address.
 - **Connected** is reported only after the link is encrypted.
 - Connect, authentication and disconnect events are logged to the serial monitor with a `BLE:` prefix.
@@ -109,6 +117,8 @@ src/
     tools_screen.cpp
     bt_le_screen.cpp
     bt_hid_screen.cpp
+    bt_camera_screen.cpp
+    bt_camera_settings_screen.cpp
 ```
 
 Each screen file provides `draw*`, `enter*` and `handle*Touch` functions. `main.cpp` holds a table with one entry per screen, so adding a screen means adding an enum value, a source file and one table row.

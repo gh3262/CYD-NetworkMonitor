@@ -249,6 +249,8 @@ static const ScreenDef screens[] = {
     /* SCREEN_TOOLS       */ { drawToolsScreen,      handleToolsTouch,      refreshToolsResults,        true  },
         /* SCREEN_BT_LE       */ { drawBtLeScreen,       handleBtLeTouch,       nullptr,                    true  },
     /* SCREEN_BT_HID      */ { drawBtHidScreen,      handleBtHidTouch,      nullptr,                    true  },
+    /* SCREEN_BT_CAMERA   */ { drawBtCameraScreen,   handleBtCameraTouch,   nullptr,                    true  },
+    /* SCREEN_BT_CAMERA_SETTINGS */ { drawBtCameraSettingsScreen, handleBtCameraSettingsTouch, nullptr, true },
     };
 
 static_assert(sizeof(screens) / sizeof(screens[0]) == SCREEN_COUNT,
@@ -286,7 +288,7 @@ static void handleTouch(int x, int y)
 
     // Home button (present on every screen except Home)
     if (screen.hasHomeButton && navPressed4(x, y) &&
-        !(state.currentScreen == SCREEN_BT_HID && btHidSequenceActive()))
+        !(state.currentScreen == SCREEN_BT_CAMERA && btCameraSequenceActive()))
     {
         enterHomeScreen();
         return;
@@ -303,7 +305,7 @@ void loop()
     maintainWiFi();
     updateScan();
     updateBtLe();
-    updateBtHid();
+    updateBtCamera();
     updateBackgroundJobs();
 
     static int lastMinute = -1;
@@ -315,7 +317,7 @@ void loop()
     {
         if (timeinfo.tm_min != lastMinute)
         {
-            if (state.currentScreen != SCREEN_BT_HID || !btHidSequenceActive())
+            if (state.currentScreen != SCREEN_BT_CAMERA || !btCameraSequenceActive())
                 drawClock();
             if (state.currentScreen == SCREEN_HOME)
                 refreshHomeTime();
