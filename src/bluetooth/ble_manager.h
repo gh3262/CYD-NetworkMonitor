@@ -26,6 +26,16 @@ enum BtEvent
     BT_EVENT_LOST         // connected link dropped without a user request
 };
 
+// Consumer-control keys; values are bits in the HID input report
+enum BleConsumerKey : uint8_t
+{
+    BLE_KEY_VOLUME_UP   = 0x01,
+    BLE_KEY_VOLUME_DOWN = 0x02,
+    BLE_KEY_PLAY_PAUSE  = 0x04,
+    BLE_KEY_NEXT        = 0x08,
+    BLE_KEY_PREVIOUS    = 0x10
+};
+
 // Call once from setup(); returns false (state BT_UNAVAILABLE) on failure
 bool bleInit();
 
@@ -41,6 +51,8 @@ void bleStartAdvertising();   // bond: wait for the saved device
 void bleStop();               // cancel pairing / stop advertising
 void bleDisconnect();
 void bleForgetBond();
+// Press and release one key; false when not connected or the send fails
+bool bleSendConsumerKey(BleConsumerKey key);
 bool bleSendVolumeUp();
 
 // Call from loop(); returns true when the state or device changed

@@ -8,7 +8,7 @@ void drawBtHidScreen()
     titleBar("BLUETOOTH HID");
 
     drawButton(20, 45, 120, 40, "Camera", COLOR_BUTTON_ALT, COLOR_BUTTON_TEXT);
-    drawButton(20, 90, 120, 40, "tbd", COLOR_DISABLED, CYD_BLACK);
+    drawButton(20, 90, 120, 40, "Media", COLOR_BUTTON_ALT, COLOR_BUTTON_TEXT);
     drawButton(20, 135, 120, 40, "tbd", COLOR_DISABLED, CYD_BLACK);
 
     drawNav1("Back");
@@ -30,5 +30,9 @@ void handleBtHidTouch(int x, int y)
     else if (touchInRect(x, y, 20, 45, 120, 40))
     {
         enterBtCameraScreen();
+    }
+    else if (touchInRect(x, y, 20, 90, 120, 40))
+    {
+        enterBtMediaScreen();
     }
 }

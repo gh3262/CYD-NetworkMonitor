@@ -9,6 +9,7 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 | WiFi status, scan, tools, system info | Working |
 | BLE pairing, bonding, reconnect (NimBLE) | Working, verified with a phone |
 | BLE HID consumer control | Implemented; camera shutter support depends on the phone and app |
+| BLE HID media control | Implemented, not yet tested on hardware; track skip support depends on the phone and app |
 
 ## New Features
 
@@ -20,6 +21,13 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 - Configurable camera settings
 - Persistent Bluetooth bonding
 - Automatic reconnect
+
+### Bluetooth HID Media Control
+
+- Play/Pause, Previous Track, and Next Track
+- Volume Up and Volume Down
+- Click sound when a key is sent
+- See [Media Control](#media-control) for setup and re-pairing
 
 ### Bluetooth Architecture
 
@@ -45,9 +53,10 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 - **System**: free heap, minimum heap, sketch size and uptime, with a link to Tools.
 - **Tools**: gateway and internet ping with green/yellow/red results, and an NTP button that re-syncs the clock and reports Synced / Sync failed.
 - **BT LE**: Bluetooth connection manager showing status and the paired device, with Pair / Connect / Stop / Cancel / Disconnect and Forget. HID stays disabled until a phone is connected.
-- **BT HID**: function menu with a Camera button and two disabled `tbd` placeholders for future HID functions.
+- **BT HID**: function menu with Camera and Media buttons and one disabled `tbd` placeholder for a future HID function.
 - **BT Camera**: sends a Volume Up consumer-control report for a single shot, after a configurable countdown, or as a configurable shot series. Countdown and shot progress are shown full-screen.
 - **Camera Settings**: adjusts Delay Seconds, Nbr Shots, and Time Between from 1 to 30. SET applies the values to BT Camera; Reset restores the editor to 5 / 5 / 2. Values are kept until reboot.
+- **Media Control**: Play/Pause, Previous, Next, Volume Up, and Volume Down media keys for the connected phone, with a click sound when a key is sent.
 - **Clock** in the title bar, updated every minute.
 - **Status LED** shows connection state and signal quality, and WiFi reconnects automatically in the background.
 - **Sound** plays non-blocking tones through the speaker amplifier on IO26. Any screen can use it; the camera plays a low 800 Hz tick each second of a countdown and a shutter beep after each successfully sent shutter report. A success sound plays when WiFi connects (at boot or on reconnect) or a phone connects over Bluetooth. An error sound plays when the boot-time WiFi connect fails, when an established WiFi or Bluetooth connection is lost, or when Bluetooth pairing times out, encryption fails, or a second device is rejected. User-requested Bluetooth disconnects are silent.
@@ -67,8 +76,9 @@ Every screen has four buttons along the bottom. Button 4 is **Home** on every sc
 | BT HID | Back (BT LE) | | | Home |
 | BT Camera | Back (BT HID) | Settings | | Home |
 | Camera Settings | Back (BT Camera) | SET | Reset | Home |
+| Media Control | Back (BT HID) | | | Home |
 
-BT HID has three body buttons: **Camera**, **tbd**, **tbd**. Camera opens BT Camera, whose body buttons are **Shutter**, **Delay**, and **Series**.
+BT HID has three body buttons: **Camera**, **Media**, **tbd**. Camera opens BT Camera, whose body buttons are **Shutter**, **Delay**, and **Series**. Media opens Media Control: a large **Play/Pause** with **Previous** and **Next** below it on the left two-thirds, and **Vol Up** over **Vol Down** on the right third.
 
 ```
 HOME
@@ -78,7 +88,8 @@ HOME
 +-- BT LE
 �   +-- HID
         +-- Camera
-            +-- Settings
+        �   +-- Settings
+        +-- Media
 +-- System
     +-- Tools
 ```
@@ -95,9 +106,42 @@ Rules:
 - **Reconnect.** A saved device starts advertising at boot and after a dropped link. Stop and Disconnect leave the radio idle until the user presses Connect.
 - **Pairing** is Just Works with bonding and LE Secure Connections, and times out after 120 s. The device advertises as `CYD-HID` with the generic HID appearance.
 - **HID controls.** Open HID, then Camera. The Camera screen sends a Bluetooth Consumer Control Volume Increment report when Shutter is tapped. Shutter flashes green for 300 ms when the report is sent successfully, then returns to red; this confirms sending, not that the phone took a photo. Delay waits the configured number of seconds before sending; Series waits the same delay, then sends the configured number of reports with the configured spacing (default 5 seconds, 5 shots, 2 seconds apart). The countdown and shot number are shown without buttons while a sequence runs. A connected phone and a camera app that treats Volume Up as the shutter are required.
+- **Media keys.** The consumer-control report carries Volume Up, Volume Down, Play/Pause, Next Track, and Previous Track; `bleSendConsumerKey()` presses and releases one. See [Media Control](#media-control).
 - **Device name.** The phone's name is not sent to the CYD, so the Device row shows the bonded Bluetooth address.
 - **Connected** is reported only after the link is encrypted.
 - Connect, authentication and disconnect events are logged to the serial monitor with a `BLE:` prefix.
+
+## Media Control
+
+The Media Control screen turns the CYD into a Bluetooth remote for whatever is playing on the connected phone (music, podcasts, video).
+
+Open it from **Home > BT LE > HID > Media**. The phone must be connected (BT LE shows Connected).
+
+| Button | Action |
+|---|---|
+| Play/Pause (large, top left) | Toggles playback |
+| Previous (bottom left) | Previous track |
+| Next (bottom middle) | Next track |
+| Vol Up (top right) | Raises the phone volume |
+| Vol Down (bottom right) | Lowers the phone volume |
+
+Each tap sends one key press and release. A click sound confirms the key was sent; this means the CYD sent it, not that the phone acted on it. If sending fails (for example, no phone connected), nothing plays and a message is logged to the serial monitor. Back returns to BT HID; Home returns to the Home screen.
+
+Previous and Next depend on the phone and the media app. Some apps ignore them, and some treat Previous as "restart track" when a track is partway through.
+
+### If the media buttons don't work the first time
+
+Phones save the CYD's list of supported keys (the HID report descriptor) when they first pair. A phone paired with firmware from before Media Control was added only knows about Volume Up, so Play/Pause, Previous, Next, and Vol Down do nothing. Unpair and re-pair to make the phone read the new key list:
+
+1. **Forget on the CYD:** go to **Home > BT LE**, press **Disconnect** if connected, then press **Forget**.
+2. **Forget on the phone:** open the phone's Bluetooth settings and remove `CYD-HID`.
+   - **iPhone:** Settings > Bluetooth > tap the (i) next to `CYD-HID` > **Forget This Device**.
+   - **Android:** Settings > Connected devices (or Bluetooth) > tap the gear next to `CYD-HID` > **Unpair** / **Forget**.
+3. **Turn the phone's Bluetooth off and back on.** This clears any cached service data.
+4. **Pair again:** on the CYD press **Pair** on the BT LE screen, then select `CYD-HID` in the phone's Bluetooth list within 120 seconds. Accept the pairing prompt.
+5. **Test:** wait until BT LE shows Connected, start some audio on the phone, then open **HID > Media** and press Play/Pause.
+
+If the keys still don't work, restart the phone and repeat steps 1–4. The same steps fix a camera shutter that stops working after a firmware update.
 
 ## Sound
 
@@ -125,7 +169,7 @@ Rules:
 
 Library and platform versions are pinned in `platformio.ini` (espressif32 7.1.3, GFX Library for Arduino 1.5.7, Adafruit GFX 1.12.6, ESP32Ping 1.7, NimBLE-Arduino 2.5.1, and XPT2046_Touchscreen at a fixed commit).
 
-If a phone keeps stale pairing or HID service data, press Forget on the CYD and also remove `CYD-HID` in the phone's Bluetooth settings, then pair again.
+If a phone keeps stale pairing or HID service data, press Forget on the CYD and also remove `CYD-HID` in the phone's Bluetooth settings, then pair again. See [If the media buttons don't work the first time](#if-the-media-buttons-dont-work-the-first-time) for the full steps.
 
 ## Project layout
 
@@ -157,6 +201,7 @@ src/
     bt_hid_screen.cpp
     bt_camera_screen.cpp
     bt_camera_settings_screen.cpp
+    bt_media_screen.cpp
 ```
 
 Each screen file provides `draw*`, `enter*` and `handle*Touch` functions. `main.cpp` holds a table with one entry per screen, so adding a screen means adding an enum value, a source file and one table row.
@@ -167,7 +212,7 @@ Each screen file provides `draw*`, `enter*` and `handle*Touch` functions. `main.
 - **Touch handling:** presses are edge-triggered with a short release debounce, so one tap triggers one action.
 - **Partial redraws:** result rows (pings, NTP status) are redrawn in place instead of repainting the whole screen.
 - **WiFi resilience:** the connect has a 15 s timeout, and the app continues without WiFi if it fails. A non-blocking loop retries every 10 s and updates the LED. A scan while disconnected drops the pending connection attempt first so it can complete.
-- **Memory:** time and uptime strings use static buffers instead of heap `String`s, and scan results are copied out of the WiFi driver and freed immediately. Flash use is about 84% with NimBLE, so a larger-app partition table may be needed as features grow.
+- **Memory:** time and uptime strings use static buffers instead of heap `String`s, and scan results are copied out of the WiFi driver and freed immediately. Flash use is about 88% with NimBLE, so a larger-app partition table may be needed as features grow.
 - **BLE threading:** NimBLE callbacks run on the BLE host task and only update volatile state; the UI reads it from `loop()`.
 
 ## Roadmap

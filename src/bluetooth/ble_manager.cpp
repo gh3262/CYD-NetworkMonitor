@@ -34,11 +34,15 @@ static uint8_t hidReportMap[] = {
     0x85, CONSUMER_REPORT_ID,
     0x15, 0x00,       // Logical Minimum (0)
     0x25, 0x01,       // Logical Maximum (1)
-    0x09, 0xE9,       // Usage (Volume Increment)
+    0x09, 0xE9,       // Usage (Volume Increment)   bit 0
+    0x09, 0xEA,       // Usage (Volume Decrement)   bit 1
+    0x09, 0xCD,       // Usage (Play/Pause)         bit 2
+    0x09, 0xB5,       // Usage (Scan Next Track)    bit 3
+    0x09, 0xB6,       // Usage (Scan Previous Track) bit 4
     0x75, 0x01,       // Report Size (1)
-    0x95, 0x01,       // Report Count (1)
+    0x95, 0x05,       // Report Count (5)
     0x81, 0x02,       // Input (Data, Variable, Absolute)
-    0x75, 0x07,       // Report Size (7)
+    0x75, 0x03,       // Report Size (3)
     0x95, 0x01,       // Report Count (1)
     0x81, 0x03,       // Input (Constant, Variable, Absolute)
     0xC0              // End Collection
@@ -276,12 +280,12 @@ void bleForgetBond()
     setState(BT_DISCONNECTED);
 }
 
-bool bleSendVolumeUp()
+bool bleSendConsumerKey(BleConsumerKey key)
 {
     if (!initialized || btState != BT_CONNECTED || !consumerInputReport)
         return false;
 
-    const uint8_t pressed = 0x01;
+    const uint8_t pressed = static_cast<uint8_t>(key);
     const uint8_t released = 0x00;
 
     if (!consumerInputReport->notify(&pressed, sizeof(pressed)))
@@ -289,6 +293,11 @@ bool bleSendVolumeUp()
 
     delay(20);
     return consumerInputReport->notify(&released, sizeof(released));
+}
+
+bool bleSendVolumeUp()
+{
+    return bleSendConsumerKey(BLE_KEY_VOLUME_UP);
 }
 
 bool bleUpdate()

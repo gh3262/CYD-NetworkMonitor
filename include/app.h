@@ -22,6 +22,7 @@ enum Screen
     SCREEN_BT_HID,
     SCREEN_BT_CAMERA,
     SCREEN_BT_CAMERA_SETTINGS,
+    SCREEN_BT_MEDIA,
     SCREEN_COUNT   // keep last
 };
 
@@ -124,6 +125,11 @@ void setBtCameraSettings(const CameraSettings &settings);
 void drawBtCameraSettingsScreen();
 void enterBtCameraSettingsScreen();
 void handleBtCameraSettingsTouch(int x, int y);
+
+// bt_media_screen.cpp
+void drawBtMediaScreen();
+void enterBtMediaScreen();
+void handleBtMediaTouch(int x, int y);
 
 // Background jobs: each start*() returns at once, and
 // updateBackgroundJobs() (called from loop) redraws when one finishes
