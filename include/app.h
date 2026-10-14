@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include "cyd.h"
 #include "bluetooth/ble_manager.h"
+#include "audio/sound_manager.h"
 
 // ====================================================
 // Application State

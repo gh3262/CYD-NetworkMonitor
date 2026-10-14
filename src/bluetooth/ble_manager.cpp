@@ -1,4 +1,5 @@
 #include "ble_manager.h"
+#include <atomic>
 #include <NimBLEDevice.h>
 #include <NimBLEHIDDevice.h>
 
@@ -18,6 +19,7 @@ static volatile bool changed = false;
 static volatile uint16_t connHandle = NO_CONN;
 static volatile bool bondPresentAtConnect = false;
 static volatile bool userDisconnect = false;
+static std::atomic<BtEvent> pendingEvent(BT_EVENT_NONE);
 static unsigned long pairingStartMs = 0;
 
 static NimBLEServer *server = nullptr;
@@ -92,6 +94,7 @@ class ServerCallbacks : public NimBLEServerCallbacks
 
         if (!connInfo.isEncrypted())
         {
+            pendingEvent = BT_EVENT_FAILED;
             server->disconnect(connInfo);
             return;
         }
@@ -101,10 +104,12 @@ class ServerCallbacks : public NimBLEServerCallbacks
             NimBLEDevice::getBondedAddress(0) != connInfo.getIdAddress())
         {
             NimBLEDevice::deleteBond(connInfo.getIdAddress());
+            pendingEvent = BT_EVENT_FAILED;
             server->disconnect(connInfo);
             return;
         }
 
+        pendingEvent = BT_EVENT_CONNECTED;
         setState(BT_CONNECTED);
     }
 
@@ -123,7 +128,10 @@ class ServerCallbacks : public NimBLEServerCallbacks
 
         // Link lost or intruder rejected: keep waiting
         if (btState == BT_CONNECTED)
+        {
+            pendingEvent = BT_EVENT_LOST;
             setState(NimBLEDevice::getNumBonds() > 0 ? BT_ADVERTISING : BT_PAIRING);
+        }
 
         pairingStartMs = millis();
         changed = true;
@@ -286,7 +294,10 @@ bool bleSendVolumeUp()
 bool bleUpdate()
 {
     if (btState == BT_PAIRING && millis() - pairingStartMs > PAIRING_TIMEOUT_MS)
+    {
         bleStop();
+        pendingEvent = BT_EVENT_FAILED;
+    }
 
     if (changed)
     {
@@ -295,4 +306,9 @@ bool bleUpdate()
     }
 
     return false;
+}
+
+BtEvent bleTakeEvent()
+{
+    return pendingEvent.exchange(BT_EVENT_NONE);
 }

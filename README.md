@@ -14,7 +14,7 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 
 ### Bluetooth HID Camera Remote
 
-- Camera shutter release
+- Camera shutter release with a confirmation beep
 - Countdown timer mode
 - Burst photography mode
 - Configurable camera settings
@@ -50,6 +50,7 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 - **Camera Settings**: adjusts Delay Seconds, Nbr Shots, and Time Between from 1 to 30. SET applies the values to BT Camera; Reset restores the editor to 5 / 5 / 2. Values are kept until reboot.
 - **Clock** in the title bar, updated every minute.
 - **Status LED** shows connection state and signal quality, and WiFi reconnects automatically in the background.
+- **Sound** plays non-blocking tones through the speaker amplifier on IO26. Any screen can use it; the camera plays a low 800 Hz tick each second of a countdown and a shutter beep after each successfully sent shutter report. A success sound plays when WiFi connects (at boot or on reconnect) or a phone connects over Bluetooth. An error sound plays when the boot-time WiFi connect fails, when an established WiFi or Bluetooth connection is lost, or when Bluetooth pairing times out, encryption fails, or a second device is rejected. User-requested Bluetooth disconnects are silent.
 
 ## Screens and navigation
 
@@ -98,6 +99,15 @@ Rules:
 - **Connected** is reported only after the link is encrypted.
 - Connect, authentication and disconnect events are logged to the serial monitor with a `BLE:` prefix.
 
+## Sound
+
+`src/audio/sound_manager.*` drives the speaker amplifier on `SPEAKER_PIN` (IO26) with LEDC channel 6 PWM. It is included through `app.h`, so every screen can use it. Sounds are non-blocking: `soundUpdate()` advances them from `loop()`, and a new sound replaces the one playing.
+
+- `playSound(SOUND_SHUTTER)` plays a built-in sound: `SOUND_CLICK`, `SOUND_BEEP`, `SOUND_SHUTTER`, `SOUND_COUNTDOWN`, `SOUND_SUCCESS`, or `SOUND_ERROR`.
+- `playTone(frequencyHz, durationMs)` plays one tone.
+- `playToneSequence(steps, count)` plays up to 16 `ToneStep` entries; frequency 0 is a rest.
+- `stopSound()`, `setSoundEnabled()`, and `setSoundVolume(0-100)` control playback. Volume defaults to 50% and is not saved across reboots.
+
 ## Hardware
 
 - ESP32-2432S028R (CYD) board, as defined in `include/cyd_pins.h`.
@@ -133,6 +143,8 @@ include/
 src/
   main.cpp            setup, WiFi connect/maintain, screen table, touch loop
   cyd_globals.cpp     Single definitions of the display and touch objects
+  audio/
+    sound_manager.h/.cpp  Non-blocking speaker tones and built-in sounds
   bluetooth/
     ble_manager.h/.cpp  BLE state, advertising, bonding (NimBLE)
   screens/

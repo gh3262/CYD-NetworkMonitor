@@ -49,6 +49,9 @@ void setup()
 
     showSplash("Network Status");
 
+    if (!soundInit())
+        Serial.println("Sound initialization failed.");
+
     if (!bleInit())
         Serial.println("BLE initialization failed.");
 
@@ -56,6 +59,9 @@ void setup()
 
     if (wifiOk && !syncTime())
         Serial.println("Time synchronization failed; start time unavailable.");
+
+    // Played after the blocking boot steps so loop() can sequence the tones
+    playSound(wifiOk ? SOUND_SUCCESS : SOUND_ERROR);
 
     //colorTest();
     // while (true);
@@ -196,6 +202,8 @@ static void maintainWiFi()
         return;
 
     static bool wasConnected = true;
+    // Distinguishes a real drop from the first pass after a failed boot connect
+    static bool hadLink = (WiFi.status() == WL_CONNECTED);
     static unsigned long lastRetry = 0;
 
     const bool connected = (WiFi.status() == WL_CONNECTED);
@@ -206,6 +214,7 @@ static void maintainWiFi()
         {
             Serial.println("WiFi reconnected");
             networkSignalLED(WiFi.RSSI());
+            playSound(SOUND_SUCCESS);
 
             // Time was never set if the boot-time sync was skipped or failed
             if (synchronizedStartDateTime()[0] == '\0')
@@ -220,6 +229,8 @@ static void maintainWiFi()
         {
             Serial.println("WiFi lost");
             networkDisconnected();
+            if (hadLink)
+                playSound(SOUND_ERROR);
             lastRetry = millis();
         }
         else if (millis() - lastRetry > WIFI_RETRY_INTERVAL_MS)
@@ -230,6 +241,8 @@ static void maintainWiFi()
     }
 
     wasConnected = connected;
+    if (connected)
+        hadLink = true;
 }
 
 // One entry per Screen, in enum order
@@ -303,8 +316,16 @@ void loop()
     static unsigned long lastTouchMs = 0;
 
     maintainWiFi();
+    soundUpdate();
     updateScan();
     updateBtLe();
+    switch (bleTakeEvent())
+    {
+    case BT_EVENT_CONNECTED: playSound(SOUND_SUCCESS); break;
+    case BT_EVENT_FAILED:
+    case BT_EVENT_LOST:      playSound(SOUND_ERROR);   break;
+    default:                 break;
+    }
     updateBtCamera();
     updateBackgroundJobs();
 

@@ -17,6 +17,15 @@ enum BtState
     BT_UNAVAILABLE    // BLE stack failed to start
 };
 
+// One-shot connection outcomes for the UI (sounds, alerts)
+enum BtEvent
+{
+    BT_EVENT_NONE,
+    BT_EVENT_CONNECTED,   // encrypted link established
+    BT_EVENT_FAILED,      // pairing timed out, encryption failed, or device rejected
+    BT_EVENT_LOST         // connected link dropped without a user request
+};
+
 // Call once from setup(); returns false (state BT_UNAVAILABLE) on failure
 bool bleInit();
 
@@ -36,5 +45,8 @@ bool bleSendVolumeUp();
 
 // Call from loop(); returns true when the state or device changed
 bool bleUpdate();
+
+// Returns the latest connection outcome once, then BT_EVENT_NONE
+BtEvent bleTakeEvent();
 
 #endif

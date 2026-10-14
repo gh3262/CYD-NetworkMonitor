@@ -40,6 +40,27 @@ static unsigned long seriesShotIntervalMs()
     return static_cast<unsigned long>(cameraSettings.secondsBetween) * 1000UL;
 }
 
+static bool triggerShutter(const char *failureMessage)
+{
+    if (!bleSendVolumeUp())
+    {
+        Serial.println(failureMessage);
+        return false;
+    }
+
+    playSound(SOUND_SHUTTER);
+    return true;
+}
+
+static void startCountdown(HidSequence sequence)
+{
+    activeSequence = sequence;
+    sequenceStartedMs = millis();
+    displayedCountdownValue = cameraSettings.delaySeconds;
+    playSound(SOUND_COUNTDOWN);
+    drawCurrentScreen();
+}
+
 static void drawShutterButton()
 {
     drawButton(
@@ -157,26 +178,18 @@ void handleBtCameraTouch(int x, int y)
     }
     else if (touchInRect(x, y, 20, 45, 120, 40))
     {
-        shutterFeedbackActive = bleSendVolumeUp();
+        shutterFeedbackActive = triggerShutter("BLE HID: volume-up report was not sent.");
         if (shutterFeedbackActive)
             shutterFeedbackStartedMs = millis();
-        else
-            Serial.println("BLE HID: volume-up report was not sent.");
         drawShutterButton();
     }
     else if (touchInRect(x, y, 20, 90, 120, 40))
     {
-        activeSequence = HID_SEQUENCE_DELAY_COUNTDOWN;
-        sequenceStartedMs = millis();
-        displayedCountdownValue = cameraSettings.delaySeconds;
-        drawCurrentScreen();
+        startCountdown(HID_SEQUENCE_DELAY_COUNTDOWN);
     }
     else if (touchInRect(x, y, 20, 135, 120, 40))
     {
-        activeSequence = HID_SEQUENCE_SERIES_COUNTDOWN;
-        sequenceStartedMs = millis();
-        displayedCountdownValue = cameraSettings.delaySeconds;
-        drawCurrentScreen();
+        startCountdown(HID_SEQUENCE_SERIES_COUNTDOWN);
     }
 }
 
@@ -204,8 +217,7 @@ void updateBtCamera()
             if (activeSequence == HID_SEQUENCE_DELAY_COUNTDOWN)
             {
                 activeSequence = HID_SEQUENCE_IDLE;
-                if (!bleSendVolumeUp())
-                    Serial.println("BLE HID: delayed volume-up report was not sent.");
+                triggerShutter("BLE HID: delayed volume-up report was not sent.");
 
                 if (state.currentScreen == SCREEN_BT_CAMERA)
                     drawCurrentScreen();
@@ -214,8 +226,7 @@ void updateBtCamera()
 
             activeSequence = HID_SEQUENCE_SERIES_SHOTS;
             displayedShotNumber = 1;
-            if (!bleSendVolumeUp())
-                Serial.println("BLE HID: series volume-up report was not sent.");
+            triggerShutter("BLE HID: series volume-up report was not sent.");
             nextSeriesShotMs = millis() + seriesShotIntervalMs();
 
             if (state.currentScreen == SCREEN_BT_CAMERA)
@@ -228,6 +239,7 @@ void updateBtCamera()
         if (remainingSeconds != displayedCountdownValue)
         {
             displayedCountdownValue = remainingSeconds;
+            playSound(SOUND_COUNTDOWN);
             if (state.currentScreen == SCREEN_BT_CAMERA)
                 drawCurrentScreen();
         }
@@ -243,8 +255,7 @@ void updateBtCamera()
         else
         {
             ++displayedShotNumber;
-            if (!bleSendVolumeUp())
-                Serial.println("BLE HID: series volume-up report was not sent.");
+            triggerShutter("BLE HID: series volume-up report was not sent.");
             nextSeriesShotMs = millis() + seriesShotIntervalMs();
         }
 
