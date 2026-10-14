@@ -9,7 +9,7 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 | WiFi status, scan, tools, system info | Working |
 | BLE pairing, bonding, reconnect (NimBLE) | Working, verified with a phone |
 | BLE HID consumer control | Implemented; camera shutter support depends on the phone and app |
-| BLE HID media control | Implemented, not yet tested on hardware; track skip support depends on the phone and app |
+| BLE HID media control | Working, verified with an Android phone; track skip support can vary by app |
 
 ## New Features
 
@@ -114,7 +114,7 @@ Rules:
 
 ## Media Control
 
-The Media Control screen turns the CYD into a Bluetooth remote for whatever is playing on the connected phone (music, podcasts, video).
+The Media Control screen turns the CYD into a Bluetooth remote for whatever is playing on the connected phone (music, podcasts, video). The media controls have been tested and work with an Android phone.
 
 Open it from **Home > BT LE > HID > Media**. The phone must be connected (BT LE shows Connected).
 
