@@ -146,6 +146,11 @@ void handleBtLeTouch(int x, int y)
 
 void updateBtLe()
 {
-    if (bleUpdate() && state.currentScreen == SCREEN_BT_LE)
+    if (!bleUpdate())
+        return;
+
+    if (state.currentScreen == SCREEN_BT_LE)
         drawCurrentScreen();
+    else if (state.currentScreen == SCREEN_BT_MEDIA)
+        refreshBtMediaStatus();
 }

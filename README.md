@@ -27,6 +27,7 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 - Play/Pause, Previous Track, and Next Track
 - Volume Up and Volume Down
 - Click sound when a key is sent
+- Live connection status on the page
 - See [Media Control](#media-control) for setup and re-pairing
 
 ### Bluetooth Architecture
@@ -56,7 +57,7 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 - **BT HID**: function menu with Camera and Media buttons and one disabled `tbd` placeholder for a future HID function.
 - **BT Camera**: sends a Volume Up consumer-control report for a single shot, after a configurable countdown, or as a configurable shot series. Countdown and shot progress are shown full-screen.
 - **Camera Settings**: adjusts Delay Seconds, Nbr Shots, and Time Between from 1 to 30. SET applies the values to BT Camera; Reset restores the editor to 5 / 5 / 2. Values are kept until reboot.
-- **Media Control**: Play/Pause, Previous, Next, Volume Up, and Volume Down media keys for the connected phone, with a click sound when a key is sent.
+- **Media Control**: Play/Pause, Previous, Next, Volume Up, and Volume Down media keys for the connected phone, with a click sound when a key is sent and a live Bluetooth status line below the track buttons.
 - **Clock** in the title bar, updated every minute.
 - **Status LED** shows connection state and signal quality, and WiFi reconnects automatically in the background.
 - **Sound** plays non-blocking tones through the speaker amplifier on IO26. Any screen can use it; the camera plays a low 800 Hz tick each second of a countdown and a shutter beep after each successfully sent shutter report. A success sound plays when WiFi connects (at boot or on reconnect) or a phone connects over Bluetooth. An error sound plays when the boot-time WiFi connect fails, when an established WiFi or Bluetooth connection is lost, or when Bluetooth pairing times out, encryption fails, or a second device is rejected. User-requested Bluetooth disconnects are silent.
@@ -78,7 +79,7 @@ Every screen has four buttons along the bottom. Button 4 is **Home** on every sc
 | Camera Settings | Back (BT Camera) | SET | Reset | Home |
 | Media Control | Back (BT HID) | | | Home |
 
-BT HID has three body buttons: **Camera**, **Media**, **tbd**. Camera opens BT Camera, whose body buttons are **Shutter**, **Delay**, and **Series**. Media opens Media Control: a large **Play/Pause** with **Previous** and **Next** below it on the left two-thirds, and **Vol Up** over **Vol Down** on the right third.
+BT HID has three body buttons: **Camera**, **Media**, **tbd**. Camera opens BT Camera, whose body buttons are **Shutter**, **Delay**, and **Series**. Media opens Media Control: a large **Play/Pause** with **Previous** and **Next** below it and a Bluetooth status line under those on the left two-thirds, and **Vol Up** over **Vol Down** on the right third.
 
 ```
 HOME
@@ -126,6 +127,18 @@ Open it from **Home > BT LE > HID > Media**. The phone must be connected (BT LE 
 | Vol Down (bottom right) | Lowers the phone volume |
 
 Each tap sends one key press and release. A click sound confirms the key was sent; this means the CYD sent it, not that the phone acted on it. If sending fails (for example, no phone connected), nothing plays and a message is logged to the serial monitor. Back returns to BT HID; Home returns to the Home screen.
+
+The status line below Previous and Next shows the Bluetooth status and updates as it changes, so the reason a button does nothing is visible right away:
+
+| Status | Color | Meaning |
+|---|---|---|
+| Connected | Green | Keys are sent to the phone |
+| Reconnecting... | Yellow | A saved phone is out of range or its Bluetooth is off; the CYD is waiting for it |
+| Pairing... | Yellow | Pairing is open on the BT LE screen |
+| Disconnected | Red | Bluetooth is idle; press Connect or Pair on the BT LE screen |
+| Starting BLE / BT Unavailable | Yellow / Red | The Bluetooth stack is starting or failed to start |
+
+"Connected" means the link works, not that the phone recognizes the media keys. If it shows Connected and the buttons still do nothing, follow the re-pair steps below.
 
 Previous and Next depend on the phone and the media app. Some apps ignore them, and some treat Previous as "restart track" when a track is partway through.
 

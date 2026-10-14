@@ -130,6 +130,7 @@ void handleBtCameraSettingsTouch(int x, int y);
 void drawBtMediaScreen();
 void enterBtMediaScreen();
 void handleBtMediaTouch(int x, int y);
+void refreshBtMediaStatus();
 
 // Background jobs: each start*() returns at once, and
 // updateBackgroundJobs() (called from loop) redraws when one finishes
