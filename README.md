@@ -10,9 +10,19 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 | BLE pairing, bonding, reconnect (NimBLE) | Working, verified with a phone |
 | BLE HID consumer control | Implemented; camera shutter support depends on the phone and app |
 | BLE HID media control | Working, verified with an Android phone; track skip support can vary by app |
-| BLE HID keyboard control | Implemented; device/app behavior needs hardware verification |
+| BLE HID keyboard control | Complete, hardware verified; key behavior can vary by host and app |
+| Timers | Stop Watch, Elapsed Time, and Count Down implemented, awaiting hardware verification |
 
 ## New Features
+
+### Timers
+
+- Home button 3 opens Timers
+- Selection page with wider Stop Watch, Count Down, and Elapsed Time buttons
+- Stop Watch with hundredths, Start/Stop, Lap display freeze, and Reset
+- All timer pages have Back and Home navigation
+- Elapsed Time with hours:minutes:seconds, Start/Stop/Reset, and a beep at each completed minute
+- Count Down with a 1-minute to 4-hour setting range, Start/Stop toggle, and completion alarm
 
 ### Bluetooth HID Camera Remote
 
@@ -57,6 +67,7 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 ## Features
 
 - **Home screen** as the landing page, with navigation to each branch.
+- **Timers**: selection page reached from Home button 3, with 200 x 40 pixel buttons for Stop Watch, Count Down, and Elapsed Time.
 - **WiFi Status**: SSID, IP, color-coded signal strength (RSSI), uptime and start time, and a `Ping: gateway / internet ms` line with an overall Health indicator (ONLINE / LOCAL ONLY / OFFLINE). Refresh runs the pings.
 - **WiFi connection**: scans for configured networks and connects to the strongest signal. If none are in range, startup continues offline and the device retries scans periodically.
 - **WiFi Scan**: lists nearby networks sorted by signal strength, paged, with the connected network highlighted. It also works while disconnected.
@@ -78,7 +89,7 @@ Every screen has four buttons along the bottom. Button 4 is **Home** on every sc
 
 | Screen | Button 1 | Button 2 | Button 3 | Button 4 |
 |---|---|---|---|---|
-| Home | WiFi | BT LE | | System |
+| Home | WiFi | BT LE | Timers | System |
 | WiFi Status | Scan | Refresh | | Home |
 | WiFi Scan | Back | Next (when paged) | Rescan | Home |
 | System | Back (Home) | Tools | Refresh | Home |
@@ -89,6 +100,10 @@ Every screen has four buttons along the bottom. Button 4 is **Home** on every sc
 | Camera Settings | Back (BT Camera) | SET | Reset | Home |
 | Media Control | Back (BT HID) | | | Home |
 | KB Control | Back (BT HID) | | | Home |
+| Timers | Back (Home) | | | Home |
+| Stop Watch | Back (Timers) | | | Home |
+| Count Down | Back (Timers) | | | Home |
+| Elapsed Time | Back (Timers) | | | Home |
 
 BT HID has three body buttons: **Camera**, **Media**, **KB**. Camera opens BT Camera, whose body buttons are **Shutter**, **Delay**, and **Series**. Media opens Media Control: a large **Play/Pause** with **Previous** and **Next** below it and a Bluetooth status line under those on the left two-thirds, and **Vol Up** over **Vol Down** on the right third. KB opens KB Control with a three-column, four-row grid of 96 x 36 pixel buttons: Vol Up/Vol Down/Tab, All/Copy/Paste, Left/Right/Pg Up, then Pg Down. Connection status occupies the two unused bottom-row cells.
 
@@ -103,9 +118,56 @@ HOME
         �   +-- Settings
         +-- Media
         +-- KB
++-- Timers
+    +-- Stop Watch
+    +-- Count Down
+    +-- Elapsed Time
 +-- System
     +-- Tools
 ```
+
+## Stop Watch
+
+Open **Home > Timers > Stop Watch**. The top-centered time uses the Home clock's extra-large font and text color. The format is **minutes:seconds:hundredths**, initially `00:00:00`; minutes grow beyond two digits after 99 minutes.
+
+The four controls form a 2 x 2 grid below the time:
+
+Every control tap, including Back and Home, plays a non-blocking beep, even if the timer state does not change. Button beeps respect sound enable/volume settings.
+
+| Button | Action |
+|---|---|
+| Start (green) | Starts timing or resumes from the stopped time; does nothing if already running |
+| Stop (alternate color) | Stops timing and shows the total elapsed time, clearing any Lap freeze |
+| Lap (`COLOR_BUTTON_OPT`) | Freezes the displayed time while timing continues; tap again to return to live time. Only active while running |
+| Reset (`COLOR_BUTTON_OPT`) | Stops and clears the stopwatch, including any frozen lap |
+
+Back returns to Timers; Home returns to Home. Timing continues in the background when you leave, and the elapsed time is retained until Reset or reboot. The stopwatch uses the ESP32 monotonic clock, independent of NTP and the time of day. The display shows hundredths but refreshes as quickly as the main loop and display allow; it does not guarantee 100 screen updates per second.
+
+## Elapsed Time
+
+Open **Home > Timers > Elapsed Time**. The top-centered display uses the same extra-large font and text color as the Home clock and Stop Watch. Time is shown as **hours:minutes:seconds**, initially `00:00:00`; hours grow beyond two digits after 99 hours.
+
+The green **Start** button spans the full 300-pixel top row. **Stop** (`COLOR_BUTTON_ALT`) and **Reset** (`COLOR_BUTTON_OPT`) sit below it on the left and right, each 145 pixels wide with a 10-pixel gap. Every control tap, including Back and Home, plays a non-blocking beep that respects sound enable/volume settings, even if the timer state does not change.
+
+- **Start** starts or resumes timing; pressing it while running does not restart the timer.
+- **Stop** pauses and retains the elapsed time.
+- **Reset** stops and clears the timer and its minute-beep tracking.
+- A non-blocking notification beep plays at each completed minute of accumulated running time (60 seconds, 120 seconds, etc.), including while another page is open. Paused time does not count. Beeps respect sound enable/volume settings and use the sound manager's normal replace-current-sound behavior. If the main loop is delayed across multiple minutes, one beep is played when it resumes rather than a burst of catch-up beeps.
+
+Back returns to Timers; Home returns to Home. Timing continues when navigating away and is retained until Reset or reboot. Like Stop Watch, this timer uses the monotonic ESP32 clock, independent of NTP.
+
+## Count Down
+
+Open **Home > Timers > Count Down**. The large top-centered remaining time uses the Home clock's font and color. A smaller **Set: HH:MM:SS** display underneath shows the selected duration. Both initially show **00:10:00** (10 minutes) after reboot. All times use **hours:minutes:seconds**.
+
+- **+1 / +10** (green) and **-1 / -10** (alternate color) adjust the selected duration in minutes, clamped to **1 minute–4 hours**. These four controls form a 2 x 2 block and do not change the active countdown.
+- **Set**, alongside the adjustment buttons, stops the countdown and loads the selected duration into the main display. It uses `COLOR_BUTTON_OPT`, matches the adjustment buttons' 38-pixel height, and is vertically centered between their two rows, smaller than the Start/Stop button.
+- **Start** (green) becomes **Stop** (alternate color) while running. Stop pauses and retains the remaining time; Start resumes. At zero, press Set to reload before starting again.
+- A non-blocking beep plays at each completed minute of countdown time, including while another page is open. Paused time does not count, and Set resets minute tracking. Delayed minute notifications are coalesced into one beep. At zero, only the completion alarm plays. Minute beeps respect sound enable/volume settings.
+- At zero, the timer stops and plays the SUCCESS tone 10 times, with one second of silence between repetitions, even if another page is open. Playback is non-blocking and respects sound enable/volume settings. A new sound (including a button beep) replaces and cancels the remaining repetitions.
+- All button taps, including Back and Home, beep. Back returns to Timers; Home returns to Home.
+
+The countdown uses the ESP32 monotonic clock and continues in the background. Navigation retains both the selected duration and remaining time; only reboot restores the 10-minute default. Remaining seconds are rounded up while running so the display reaches zero only when the countdown has finished.
 
 ## Bluetooth LE
 
@@ -170,6 +232,8 @@ Phones save the CYD's list of supported keys (the HID report descriptor) when th
 If the keys still don't work, restart the phone and repeat steps 1–4. The same steps fix a camera shutter that stops working after a firmware update.
 
 ## Keyboard Control
+
+Hardware verification completed on October 15, 2026, including the Ctrl-A/C/V shortcuts and the three-column, four-row button layout. The KB function is complete.
 
 Open **Home > BT LE > HID > KB** while connected to a BLE host.
 
@@ -249,6 +313,10 @@ src/
     bt_camera_settings_screen.cpp
     bt_media_screen.cpp
     bt_kb_screen.cpp
+    timers_screen.cpp
+    stopwatch_screen.cpp
+    countdown_screen.cpp
+    elapsed_screen.cpp
 ```
 
 Each screen file provides `draw*`, `enter*` and `handle*Touch` functions. `main.cpp` holds a table with one entry per screen, so adding a screen means adding an enum value, a source file and one table row.

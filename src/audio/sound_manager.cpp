@@ -17,6 +17,9 @@ static uint8_t stepCount = 0;
 static uint8_t stepIndex = 0;
 static unsigned long stepStartedMs = 0;
 static bool playing = false;
+static uint8_t repeatsRemaining = 0;
+static uint16_t repeatGapMs = 0;
+static bool waitingRepeat = false;
 
 static const ToneStep CLICK_STEPS[] = {{3000, 15}};
 static const ToneStep BEEP_STEPS[] = {{2000, 120}};
@@ -87,6 +90,8 @@ bool playToneSequence(const ToneStep *sequence, uint8_t count)
     memcpy(steps, sequence, count * sizeof(ToneStep));
     stepCount = count;
     stepIndex = 0;
+    repeatsRemaining = 0;
+    waitingRepeat = false;
     playing = true;
     startStep();
     return true;
@@ -112,11 +117,29 @@ bool playSound(Sound sound)
     return false;
 }
 
+bool playRepeatedSound(Sound sound, uint8_t count, uint16_t gapMs)
+{
+    if (count == 0 || !playSound(sound))
+        return false;
+
+    repeatsRemaining = count - 1;
+    repeatGapMs = gapMs;
+    return true;
+}
+
+void playButtonBeep()
+{
+    if (soundEnabled() && soundVolume() > 0 && !playSound(SOUND_BEEP))
+        Serial.println("Sound: button beep could not be played.");
+}
+
 void stopSound()
 {
     playing = false;
     stepCount = 0;
     stepIndex = 0;
+    repeatsRemaining = 0;
+    waitingRepeat = false;
     silence();
 }
 
@@ -142,7 +165,7 @@ void setSoundVolume(uint8_t percent)
     volumePercent = percent > 100 ? 100 : percent;
     if (volumePercent == 0)
         stopSound();
-    else if (playing && steps[stepIndex].frequencyHz != 0)
+    else if (playing && !waitingRepeat && steps[stepIndex].frequencyHz != 0)
         ledcWrite(SOUND_LEDC_CHANNEL, volumeDuty());
 }
 
@@ -153,15 +176,37 @@ uint8_t soundVolume()
 
 void soundUpdate()
 {
-    if (!playing ||
-        millis() - stepStartedMs < steps[stepIndex].durationMs)
+    if (!playing)
         return;
 
-    if (++stepIndex >= stepCount)
+    if (waitingRepeat)
     {
-        stopSound();
+        if (millis() - stepStartedMs >= repeatGapMs)
+        {
+            waitingRepeat = false;
+            stepIndex = 0;
+            startStep();
+        }
         return;
     }
 
+    if (millis() - stepStartedMs < steps[stepIndex].durationMs)
+        return;
+
+    if (stepIndex + 1 >= stepCount)
+    {
+        if (repeatsRemaining > 0)
+        {
+            --repeatsRemaining;
+            silence();
+            waitingRepeat = true;
+            stepStartedMs = millis();
+        }
+        else
+            stopSound();
+        return;
+    }
+
+    ++stepIndex;
     startStep();
 }

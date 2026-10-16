@@ -43,6 +43,7 @@ void drawHomeScreen()
 
     drawNav1("WiFi");
     drawNav2("BT LE");
+    drawNav3("Timers");
     drawNav4("System");
 }
 
@@ -64,6 +65,11 @@ void handleHomeTouch(int x, int y)
     else if (navPressed2(x, y))
     {
         enterBtLeScreen();
+    }
+
+    else if (navPressed3(x, y))
+    {
+        enterTimersScreen();
     }
 
     // System button

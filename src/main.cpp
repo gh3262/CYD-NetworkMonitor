@@ -266,6 +266,10 @@ static const ScreenDef screens[] = {
     /* SCREEN_BT_CAMERA_SETTINGS */ { drawBtCameraSettingsScreen, handleBtCameraSettingsTouch, nullptr, true },
     /* SCREEN_BT_MEDIA    */ { drawBtMediaScreen,    handleBtMediaTouch,    nullptr,                    true  },
     /* SCREEN_BT_KB       */ { drawBtKbScreen,       handleBtKbTouch,       nullptr,                    true  },
+    /* SCREEN_TIMERS      */ { drawTimersScreen,     handleTimersTouch,     nullptr,                    true  },
+    /* SCREEN_STOPWATCH   */ { drawStopwatchScreen,  handleStopwatchTouch,  nullptr,                    true  },
+    /* SCREEN_COUNTDOWN   */ { drawCountdownScreen,  handleCountdownTouch,  nullptr,                    true  },
+    /* SCREEN_ELAPSED     */ { drawElapsedScreen,    handleElapsedTouch,    nullptr,                    true  },
     };
 
 static_assert(sizeof(screens) / sizeof(screens[0]) == SCREEN_COUNT,
@@ -305,6 +309,9 @@ static void handleTouch(int x, int y)
     if (screen.hasHomeButton && navPressed4(x, y) &&
         !(state.currentScreen == SCREEN_BT_CAMERA && btCameraSequenceActive()))
     {
+        if (state.currentScreen == SCREEN_STOPWATCH || state.currentScreen == SCREEN_ELAPSED ||
+            state.currentScreen == SCREEN_COUNTDOWN)
+            playButtonBeep();
         enterHomeScreen();
         return;
     }
@@ -330,6 +337,9 @@ void loop()
     }
     updateBtCamera();
     updateBackgroundJobs();
+    updateStopwatch();
+    updateElapsed();
+    updateCountdown();
 
     static int lastMinute = -1;
 

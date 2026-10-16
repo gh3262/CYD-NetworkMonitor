@@ -35,6 +35,10 @@ bool soundInit();
 // Starting a sound replaces the one playing. Returns false when sound is
 // disabled, muted, uninitialized, or the request is invalid.
 bool playSound(Sound sound);
+// Repeats the whole sound, with a silent gap after each play except the last.
+bool playRepeatedSound(Sound sound, uint8_t count, uint16_t gapMs);
+// Button feedback; respects mute/disable and logs playback failures.
+void playButtonBeep();
 bool playTone(uint16_t frequencyHz, uint16_t durationMs);
 bool playToneSequence(const ToneStep *steps, uint8_t count);
 void stopSound();

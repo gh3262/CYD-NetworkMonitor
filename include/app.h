@@ -24,6 +24,10 @@ enum Screen
     SCREEN_BT_CAMERA_SETTINGS,
     SCREEN_BT_MEDIA,
     SCREEN_BT_KB,
+    SCREEN_TIMERS,
+    SCREEN_STOPWATCH,
+    SCREEN_COUNTDOWN,
+    SCREEN_ELAPSED,
     SCREEN_COUNT   // keep last
 };
 
@@ -139,6 +143,29 @@ void drawBtKbScreen();
 void enterBtKbScreen();
 void handleBtKbTouch(int x, int y);
 void refreshBtKbStatus();
+
+// timers_screen.cpp
+void drawTimersScreen();
+void enterTimersScreen();
+void handleTimersTouch(int x, int y);
+
+// stopwatch_screen.cpp
+void drawStopwatchScreen();
+void enterStopwatchScreen();
+void handleStopwatchTouch(int x, int y);
+void updateStopwatch();
+
+// countdown_screen.cpp
+void drawCountdownScreen();
+void enterCountdownScreen();
+void handleCountdownTouch(int x, int y);
+void updateCountdown();
+
+// elapsed_screen.cpp
+void drawElapsedScreen();
+void enterElapsedScreen();
+void handleElapsedTouch(int x, int y);
+void updateElapsed();
 
 // Background jobs: each start*() returns at once, and
 // updateBackgroundJobs() (called from loop) redraws when one finishes
