@@ -19,6 +19,8 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 
 - Home button 3 opens Timers
 - Selection page with wider Stop Watch, Count Down, and Elapsed Time buttons
+- Each selection button has a 30-pixel circular indicator on its right: gray when stopped, deep red while running (including a frozen stopwatch Lap display). Indicators refresh on return and when a countdown finishes while the Timers page is open.
+- All pages with the shared header show a small deep-red circle just left of the date/time while any timer is running; it blends into the header background when none are running. It updates independently of the clock, and is omitted from the camera's full-screen countdown/shot displays.
 - Stop Watch with hundredths, Start/Stop, Lap display freeze, and Reset
 - All timer pages have Back and Home navigation
 - Elapsed Time with hours:minutes:seconds, Start/Stop/Reset, and a beep at each completed minute

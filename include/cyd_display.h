@@ -12,6 +12,7 @@
 // Display Objects
 // ====================================================
 extern Arduino_GFX *gfx;
+void drawHeaderTimerIndicator(uint16_t bgColor = COLOR_HEADER_BG);
 // ====================================================
 // Initialization
 // ====================================================
@@ -81,6 +82,7 @@ inline void titleBar(
 
     setDefaultFont();
     drawClock();
+    drawHeaderTimerIndicator(bgColor);
 }
 
 inline void centerText(

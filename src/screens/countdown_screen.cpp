@@ -87,6 +87,11 @@ static void drawStartStop()
                running ? COLOR_BUTTON_ALT : COLOR_BUTTON, COLOR_BUTTON_TEXT);
 }
 
+bool countdownRunning()
+{
+    return running;
+}
+
 void updateCountdown()
 {
     const int64_t left = timeRemainingUs();

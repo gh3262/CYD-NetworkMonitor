@@ -148,24 +148,28 @@ void refreshBtKbStatus();
 void drawTimersScreen();
 void enterTimersScreen();
 void handleTimersTouch(int x, int y);
+void updateTimers();
 
 // stopwatch_screen.cpp
 void drawStopwatchScreen();
 void enterStopwatchScreen();
 void handleStopwatchTouch(int x, int y);
 void updateStopwatch();
+bool stopwatchRunning();
 
 // countdown_screen.cpp
 void drawCountdownScreen();
 void enterCountdownScreen();
 void handleCountdownTouch(int x, int y);
 void updateCountdown();
+bool countdownRunning();
 
 // elapsed_screen.cpp
 void drawElapsedScreen();
 void enterElapsedScreen();
 void handleElapsedTouch(int x, int y);
 void updateElapsed();
+bool elapsedRunning();
 
 // Background jobs: each start*() returns at once, and
 // updateBackgroundJobs() (called from loop) redraws when one finishes

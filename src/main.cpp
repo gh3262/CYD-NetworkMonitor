@@ -340,6 +340,7 @@ void loop()
     updateStopwatch();
     updateElapsed();
     updateCountdown();
+    updateTimers();
 
     static int lastMinute = -1;
 

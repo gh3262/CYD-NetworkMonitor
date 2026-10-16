@@ -55,6 +55,11 @@ static void drawElapsedTime(bool force)
     gfx->setTextSize(2);
 }
 
+bool elapsedRunning()
+{
+    return running;
+}
+
 void updateElapsed()
 {
     const int64_t minute = elapsedUs() / 60000000;

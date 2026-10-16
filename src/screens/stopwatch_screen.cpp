@@ -57,6 +57,11 @@ static void drawStopwatchTime(bool force)
     gfx->setTextSize(2);
 }
 
+bool stopwatchRunning()
+{
+    return running;
+}
+
 void updateStopwatch()
 {
     if (state.currentScreen == SCREEN_STOPWATCH)
