@@ -42,6 +42,25 @@ void updateTimers()
         drawTimerIndicators(false);
 }
 
+void drawTimerBeepsButton()
+{
+    drawButton(NAV_X2, NAV_Y, NAV_WIDTH, NAV_HEIGHT,
+               timerBeepsEnabled() ? "Beeps" : "Silent",
+               timerBeepsEnabled() ? COLOR_BUTTON : COLOR_BUTTON_OPT,
+               COLOR_BUTTON_TEXT);
+}
+
+bool handleTimerBeepsTouch(int x, int y)
+{
+    if (!navPressed2(x, y))
+        return false;
+
+    setTimerBeepsEnabled(!timerBeepsEnabled());
+    playTimerButtonBeep();
+    drawTimerBeepsButton();
+    return true;
+}
+
 void drawTimersScreen()
 {
     clearScreen(COLOR_BACKGROUND);
@@ -53,6 +72,7 @@ void drawTimersScreen()
     drawTimerIndicators(true);
 
     drawNav1("Back");
+    drawTimerBeepsButton();
     drawNav4("Home");
 }
 
@@ -64,6 +84,9 @@ void enterTimersScreen()
 
 void handleTimersTouch(int x, int y)
 {
+    if (handleTimerBeepsTouch(x, y))
+        return;
+
     if (navPressed1(x, y))
     {
         enterHomeScreen();

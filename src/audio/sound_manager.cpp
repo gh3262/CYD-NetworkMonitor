@@ -10,6 +10,8 @@ static const uint32_t SOUND_INIT_FREQUENCY_HZ = 2000;
 
 static bool initialized = false;
 static bool enabled = true;
+static bool timerBeeps = true;
+static bool playingTimerSound = false;
 static uint8_t volumePercent = SOUND_DEFAULT_VOLUME;
 
 static ToneStep steps[SOUND_MAX_STEPS];
@@ -93,6 +95,7 @@ bool playToneSequence(const ToneStep *sequence, uint8_t count)
     repeatsRemaining = 0;
     waitingRepeat = false;
     playing = true;
+    playingTimerSound = false;
     startStep();
     return true;
 }
@@ -133,9 +136,38 @@ void playButtonBeep()
         Serial.println("Sound: button beep could not be played.");
 }
 
+void setTimerBeepsEnabled(bool isEnabled)
+{
+    timerBeeps = isEnabled;
+    if (!timerBeeps && playingTimerSound)
+        stopSound();
+}
+
+bool timerBeepsEnabled()
+{
+    return timerBeeps;
+}
+
+bool playTimerSound(Sound sound, uint8_t count, uint16_t gapMs)
+{
+    if (!timerBeeps || !playRepeatedSound(sound, count, gapMs))
+        return false;
+
+    playingTimerSound = true;
+    return true;
+}
+
+void playTimerButtonBeep()
+{
+    if (timerBeeps && soundEnabled() && soundVolume() > 0 &&
+        !playTimerSound(SOUND_BEEP))
+        Serial.println("Timer: button beep could not be played.");
+}
+
 void stopSound()
 {
     playing = false;
+    playingTimerSound = false;
     stepCount = 0;
     stepIndex = 0;
     repeatsRemaining = 0;

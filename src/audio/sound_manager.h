@@ -39,6 +39,11 @@ bool playSound(Sound sound);
 bool playRepeatedSound(Sound sound, uint8_t count, uint16_t gapMs);
 // Button feedback; respects mute/disable and logs playback failures.
 void playButtonBeep();
+// Timer-only mute; disabling also cancels an active timer sound.
+void setTimerBeepsEnabled(bool enabled);
+bool timerBeepsEnabled();
+bool playTimerSound(Sound sound, uint8_t count = 1, uint16_t gapMs = 0);
+void playTimerButtonBeep();
 bool playTone(uint16_t frequencyHz, uint16_t durationMs);
 bool playToneSequence(const ToneStep *steps, uint8_t count);
 void stopSound();

@@ -149,6 +149,8 @@ void drawTimersScreen();
 void enterTimersScreen();
 void handleTimersTouch(int x, int y);
 void updateTimers();
+void drawTimerBeepsButton();
+bool handleTimerBeepsTouch(int x, int y);
 
 // stopwatch_screen.cpp
 void drawStopwatchScreen();

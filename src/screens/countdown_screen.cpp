@@ -99,8 +99,8 @@ void updateCountdown()
     {
         running = false;
         remainingUs = 0;
-        if (soundEnabled() && soundVolume() > 0 &&
-            !playRepeatedSound(SOUND_SUCCESS, 10, 1000))
+        if (timerBeepsEnabled() && soundEnabled() && soundVolume() > 0 &&
+            !playTimerSound(SOUND_SUCCESS, 10, 1000))
             Serial.println("Countdown timer: completion alarm could not be played.");
 
         if (state.currentScreen == SCREEN_COUNTDOWN)
@@ -113,7 +113,8 @@ void updateCountdown()
         {
             // Coalesce missed minute boundaries into a single notification.
             lastBeepMinute = minute;
-            if (soundEnabled() && soundVolume() > 0 && !playSound(SOUND_BEEP))
+            if (timerBeepsEnabled() && soundEnabled() && soundVolume() > 0 &&
+                !playTimerSound(SOUND_BEEP))
                 Serial.println("Countdown timer: minute beep could not be played.");
         }
     }
@@ -134,6 +135,7 @@ void drawCountdownScreen()
     drawStartStop();
 
     drawNav1("Back");
+    drawTimerBeepsButton();
     drawNav4("Home");
 }
 
@@ -145,9 +147,12 @@ void enterCountdownScreen()
 
 void handleCountdownTouch(int x, int y)
 {
+    if (handleTimerBeepsTouch(x, y))
+        return;
+
     if (navPressed1(x, y))
     {
-        playButtonBeep();
+        playTimerButtonBeep();
         enterTimersScreen();
         return;
     }
@@ -157,7 +162,7 @@ void handleCountdownTouch(int x, int y)
         if (!touchInRect(x, y, b.x, b.y, b.w, b.h))
             continue;
 
-        playButtonBeep();
+        playTimerButtonBeep();
         setMinutes = constrain(setMinutes + b.minuteDelta, MIN_SET_MINUTES, MAX_SET_MINUTES);
         drawSetTime();
         return;
@@ -165,7 +170,7 @@ void handleCountdownTouch(int x, int y)
 
     if (touchInRect(x, y, 146, 131, 68, 38))
     {
-        playButtonBeep();
+        playTimerButtonBeep();
         running = false;
         remainingUs = setMinutes * US_PER_MINUTE;
         lastBeepMinute = setMinutes;
@@ -174,7 +179,7 @@ void handleCountdownTouch(int x, int y)
     }
     else if (touchInRect(x, y, 222, 108, 88, 84))
     {
-        playButtonBeep();
+        playTimerButtonBeep();
         if (running)
         {
             remainingUs = timeRemainingUs();

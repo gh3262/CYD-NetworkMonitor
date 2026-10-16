@@ -21,9 +21,10 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 - Selection page with wider Stop Watch, Count Down, and Elapsed Time buttons
 - Each selection button has a 30-pixel circular indicator on its right: gray when stopped, deep red while running (including a frozen stopwatch Lap display). Indicators refresh on return and when a countdown finishes while the Timers page is open.
 - All pages with the shared header show a small deep-red circle just left of the date/time while any timer is running; it blends into the header background when none are running. It updates independently of the clock, and is omitted from the camera's full-screen countdown/shot displays.
-- Stop Watch with hundredths, Start/Stop, Lap display freeze, and Reset
+- Stop Watch with hundredths, a full-width Start/Stop toggle, Lap display freeze, and Reset
 - All timer pages have Back and Home navigation
-- Elapsed Time with hours:minutes:seconds, Start/Stop/Reset, and a beep at each completed minute
+- Bottom button 2 on the Timers menu and all three timer pages toggles a shared timer-only sound setting: green **Beeps** (default after reboot) or gray **Silent**. Silent mutes timer button feedback, minute beeps, and the countdown completion alarm, and immediately stops any timer sound already playing. The setting stays in effect when leaving the timer pages; WiFi and Bluetooth sounds are unaffected.
+- Elapsed Time with hours:minutes:seconds, a full-width Start/Stop toggle, Reset, and a beep at each completed minute
 - Count Down with a 1-minute to 4-hour setting range, Start/Stop toggle, and completion alarm
 
 ### Bluetooth HID Camera Remote
@@ -102,10 +103,10 @@ Every screen has four buttons along the bottom. Button 4 is **Home** on every sc
 | Camera Settings | Back (BT Camera) | SET | Reset | Home |
 | Media Control | Back (BT HID) | | | Home |
 | KB Control | Back (BT HID) | | | Home |
-| Timers | Back (Home) | | | Home |
-| Stop Watch | Back (Timers) | | | Home |
-| Count Down | Back (Timers) | | | Home |
-| Elapsed Time | Back (Timers) | | | Home |
+| Timers | Back (Home) | Beeps / Silent | | Home |
+| Stop Watch | Back (Timers) | Beeps / Silent | | Home |
+| Count Down | Back (Timers) | Beeps / Silent | | Home |
+| Elapsed Time | Back (Timers) | Beeps / Silent | | Home |
 
 BT HID has three body buttons: **Camera**, **Media**, **KB**. Camera opens BT Camera, whose body buttons are **Shutter**, **Delay**, and **Series**. Media opens Media Control: a large **Play/Pause** with **Previous** and **Next** below it and a Bluetooth status line under those on the left two-thirds, and **Vol Up** over **Vol Down** on the right third. KB opens KB Control with a three-column, four-row grid of 96 x 36 pixel buttons: Vol Up/Vol Down/Tab, All/Copy/Paste, Left/Right/Pg Up, then Pg Down. Connection status occupies the two unused bottom-row cells.
 
@@ -132,14 +133,13 @@ HOME
 
 Open **Home > Timers > Stop Watch**. The top-centered time uses the Home clock's extra-large font and text color. The format is **minutes:seconds:hundredths**, initially `00:00:00`; minutes grow beyond two digits after 99 minutes.
 
-The four controls form a 2 x 2 grid below the time:
+The Start/Stop toggle spans the full 300-pixel top row below the time. Lap and Reset remain below it on the left and right, each 145 pixels wide:
 
-Every control tap, including Back and Home, plays a non-blocking beep, even if the timer state does not change. Button beeps respect sound enable/volume settings.
+In Beeps mode, every control tap, including Back and Home, plays a non-blocking beep, even if the timer state does not change. Button beeps respect sound enable/volume settings. Bottom button 2 toggles the shared Beeps/Silent setting; switching to Silent is silent, while switching back to Beeps plays confirmation feedback.
 
 | Button | Action |
 |---|---|
-| Start (green) | Starts timing or resumes from the stopped time; does nothing if already running |
-| Stop (alternate color) | Stops timing and shows the total elapsed time, clearing any Lap freeze |
+| Start / Stop | Green Start starts or resumes timing, then becomes deep-red Stop. Stop pauses and retains the total elapsed time, clears any Lap freeze, and restores Start |
 | Lap (`COLOR_BUTTON_OPT`) | Freezes the displayed time while timing continues; tap again to return to live time. Only active while running |
 | Reset (`COLOR_BUTTON_OPT`) | Stops and clears the stopwatch, including any frozen lap |
 
@@ -149,12 +149,12 @@ Back returns to Timers; Home returns to Home. Timing continues in the background
 
 Open **Home > Timers > Elapsed Time**. The top-centered display uses the same extra-large font and text color as the Home clock and Stop Watch. Time is shown as **hours:minutes:seconds**, initially `00:00:00`; hours grow beyond two digits after 99 hours.
 
-The green **Start** button spans the full 300-pixel top row. **Stop** (`COLOR_BUTTON_ALT`) and **Reset** (`COLOR_BUTTON_OPT`) sit below it on the left and right, each 145 pixels wide with a 10-pixel gap. Every control tap, including Back and Home, plays a non-blocking beep that respects sound enable/volume settings, even if the timer state does not change.
+The **Start/Stop** toggle spans the full 300-pixel top row. **Reset** (`COLOR_BUTTON_OPT`) remains below it on the right, 145 pixels wide; the lower-left area is empty. In Beeps mode, every control tap, including Back and Home, plays a non-blocking beep that respects sound enable/volume settings, even if the timer state does not change. Bottom button 2 toggles the shared Beeps/Silent setting.
 
-- **Start** starts or resumes timing; pressing it while running does not restart the timer.
-- **Stop** pauses and retains the elapsed time.
+- Green **Start** starts or resumes timing and becomes deep-red **Stop**.
+- **Stop** pauses and retains the elapsed time, then restores green **Start**.
 - **Reset** stops and clears the timer and its minute-beep tracking.
-- A non-blocking notification beep plays at each completed minute of accumulated running time (60 seconds, 120 seconds, etc.), including while another page is open. Paused time does not count. Beeps respect sound enable/volume settings and use the sound manager's normal replace-current-sound behavior. If the main loop is delayed across multiple minutes, one beep is played when it resumes rather than a burst of catch-up beeps.
+- In Beeps mode, a non-blocking notification beep plays at each completed minute of accumulated running time (60 seconds, 120 seconds, etc.), including while another page is open. Paused time does not count. Beeps respect sound enable/volume settings and use the sound manager's normal replace-current-sound behavior. If the main loop is delayed across multiple minutes, one beep is played when it resumes rather than a burst of catch-up beeps. Minutes crossed in Silent mode are not replayed when Beeps is restored.
 
 Back returns to Timers; Home returns to Home. Timing continues when navigating away and is retained until Reset or reboot. Like Stop Watch, this timer uses the monotonic ESP32 clock, independent of NTP.
 
@@ -165,9 +165,9 @@ Open **Home > Timers > Count Down**. The large top-centered remaining time uses 
 - **+1 / +10** (green) and **-1 / -10** (alternate color) adjust the selected duration in minutes, clamped to **1 minute–4 hours**. These four controls form a 2 x 2 block and do not change the active countdown.
 - **Set**, alongside the adjustment buttons, stops the countdown and loads the selected duration into the main display. It uses `COLOR_BUTTON_OPT`, matches the adjustment buttons' 38-pixel height, and is vertically centered between their two rows, smaller than the Start/Stop button.
 - **Start** (green) becomes **Stop** (alternate color) while running. Stop pauses and retains the remaining time; Start resumes. At zero, press Set to reload before starting again.
-- A non-blocking beep plays at each completed minute of countdown time, including while another page is open. Paused time does not count, and Set resets minute tracking. Delayed minute notifications are coalesced into one beep. At zero, only the completion alarm plays. Minute beeps respect sound enable/volume settings.
-- At zero, the timer stops and plays the SUCCESS tone 10 times, with one second of silence between repetitions, even if another page is open. Playback is non-blocking and respects sound enable/volume settings. A new sound (including a button beep) replaces and cancels the remaining repetitions.
-- All button taps, including Back and Home, beep. Back returns to Timers; Home returns to Home.
+- In Beeps mode, a non-blocking beep plays at each completed minute of countdown time, including while another page is open. Paused time does not count, and Set resets minute tracking. Delayed minute notifications are coalesced into one beep. At zero, only the completion alarm plays. Minute beeps respect sound enable/volume settings; minutes crossed in Silent mode are not replayed.
+- At zero, the timer stops and, in Beeps mode, plays the SUCCESS tone 10 times, with one second of silence between repetitions, even if another page is open. Playback is non-blocking and respects sound enable/volume settings. A new sound (including a button beep) replaces and cancels the remaining repetitions. Silent mode cancels an active timer alarm; restoring Beeps does not replay a muted completion alarm.
+- In Beeps mode, all button taps, including Back and Home, beep. Bottom button 2 toggles the shared Beeps/Silent setting. Back returns to Timers; Home returns to Home.
 
 The countdown uses the ESP32 monotonic clock and continues in the background. Navigation retains both the selected duration and remaining time; only reboot restores the 10-minute default. Remaining seconds are rounded up while running so the display reaches zero only when the countdown has finished.
 

@@ -16,13 +16,19 @@ struct ElapsedButton
 
 static const ElapsedButton ELAPSED_BUTTONS[] = {
     {10, 100, 300, 42, "Start", COLOR_BUTTON},
-    {10, 150, 145, 42, "Stop", COLOR_BUTTON_ALT},
     {165, 150, 145, 42, "Reset", COLOR_BUTTON_OPT},
 };
 
 static int64_t elapsedUs()
 {
     return accumulatedUs + (running ? esp_timer_get_time() - startedUs : 0);
+}
+
+static void drawStartStop()
+{
+    const ElapsedButton &b = ELAPSED_BUTTONS[0];
+    drawButton(b.x, b.y, b.w, b.h, running ? "Stop" : "Start",
+               running ? COLOR_BUTTON_ALT : COLOR_BUTTON, COLOR_BUTTON_TEXT);
 }
 
 static void drawElapsedTime(bool force)
@@ -67,7 +73,8 @@ void updateElapsed()
     {
         // Coalesce missed boundaries if the main loop was temporarily blocked.
         lastBeepMinute = minute;
-        if (soundEnabled() && soundVolume() > 0 && !playSound(SOUND_BEEP))
+        if (timerBeepsEnabled() && soundEnabled() && soundVolume() > 0 &&
+            !playTimerSound(SOUND_BEEP))
             Serial.println("Elapsed timer: minute beep could not be played.");
     }
 
@@ -81,10 +88,15 @@ void drawElapsedScreen()
     titleBar("Elapsed Time");
     drawElapsedTime(true);
 
-    for (const ElapsedButton &b : ELAPSED_BUTTONS)
+    drawStartStop();
+    for (unsigned i = 1; i < sizeof(ELAPSED_BUTTONS) / sizeof(ELAPSED_BUTTONS[0]); ++i)
+    {
+        const ElapsedButton &b = ELAPSED_BUTTONS[i];
         drawButton(b.x, b.y, b.w, b.h, b.label, b.color, COLOR_BUTTON_TEXT);
+    }
 
     drawNav1("Back");
+    drawTimerBeepsButton();
     drawNav4("Home");
 }
 
@@ -96,9 +108,12 @@ void enterElapsedScreen()
 
 void handleElapsedTouch(int x, int y)
 {
+    if (handleTimerBeepsTouch(x, y))
+        return;
+
     if (navPressed1(x, y))
     {
-        playButtonBeep();
+        playTimerButtonBeep();
         enterTimersScreen();
         return;
     }
@@ -109,21 +124,22 @@ void handleElapsedTouch(int x, int y)
         if (!touchInRect(x, y, b.x, b.y, b.w, b.h))
             continue;
 
-        playButtonBeep();
+        playTimerButtonBeep();
         switch (i)
         {
         case 0:
-            if (!running)
+            if (running)
+            {
+                accumulatedUs = elapsedUs();
+                running = false;
+            }
+            else
             {
                 startedUs = esp_timer_get_time();
                 running = true;
             }
             break;
         case 1:
-            accumulatedUs = elapsedUs();
-            running = false;
-            break;
-        case 2:
             running = false;
             accumulatedUs = 0;
             lastBeepMinute = 0;
@@ -131,6 +147,7 @@ void handleElapsedTouch(int x, int y)
         }
 
         drawElapsedTime(true);
+        drawStartStop();
         return;
     }
 }

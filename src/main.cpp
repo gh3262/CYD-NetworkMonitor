@@ -311,7 +311,7 @@ static void handleTouch(int x, int y)
     {
         if (state.currentScreen == SCREEN_STOPWATCH || state.currentScreen == SCREEN_ELAPSED ||
             state.currentScreen == SCREEN_COUNTDOWN)
-            playButtonBeep();
+            playTimerButtonBeep();
         enterHomeScreen();
         return;
     }

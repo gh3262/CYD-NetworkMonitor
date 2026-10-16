@@ -16,8 +16,7 @@ struct StopwatchButton
 };
 
 static const StopwatchButton STOPWATCH_BUTTONS[] = {
-    {10, 100, 145, 42, "Start", COLOR_BUTTON},
-    {165, 100, 145, 42, "Stop", COLOR_BUTTON_ALT},
+    {10, 100, 300, 42, "Start", COLOR_BUTTON},
     {10, 150, 145, 42, "Lap", COLOR_BUTTON_OPT},
     {165, 150, 145, 42, "Reset", COLOR_BUTTON_OPT},
 };
@@ -25,6 +24,13 @@ static const StopwatchButton STOPWATCH_BUTTONS[] = {
 static int64_t elapsedUs()
 {
     return accumulatedUs + (running ? esp_timer_get_time() - startedUs : 0);
+}
+
+static void drawStartStop()
+{
+    const StopwatchButton &b = STOPWATCH_BUTTONS[0];
+    drawButton(b.x, b.y, b.w, b.h, running ? "Stop" : "Start",
+               running ? COLOR_BUTTON_ALT : COLOR_BUTTON, COLOR_BUTTON_TEXT);
 }
 
 static void drawStopwatchTime(bool force)
@@ -74,10 +80,15 @@ void drawStopwatchScreen()
     titleBar("Stop Watch");
     drawStopwatchTime(true);
 
-    for (const StopwatchButton &b : STOPWATCH_BUTTONS)
+    drawStartStop();
+    for (unsigned i = 1; i < sizeof(STOPWATCH_BUTTONS) / sizeof(STOPWATCH_BUTTONS[0]); ++i)
+    {
+        const StopwatchButton &b = STOPWATCH_BUTTONS[i];
         drawButton(b.x, b.y, b.w, b.h, b.label, b.color, COLOR_BUTTON_TEXT);
+    }
 
     drawNav1("Back");
+    drawTimerBeepsButton();
     drawNav4("Home");
 }
 
@@ -89,9 +100,12 @@ void enterStopwatchScreen()
 
 void handleStopwatchTouch(int x, int y)
 {
+    if (handleTimerBeepsTouch(x, y))
+        return;
+
     if (navPressed1(x, y))
     {
-        playButtonBeep();
+        playTimerButtonBeep();
         enterTimersScreen();
         return;
     }
@@ -102,22 +116,23 @@ void handleStopwatchTouch(int x, int y)
         if (!touchInRect(x, y, b.x, b.y, b.w, b.h))
             continue;
 
-        playButtonBeep();
+        playTimerButtonBeep();
         switch (i)
         {
         case 0:
-            if (!running)
+            if (running)
+            {
+                accumulatedUs = elapsedUs();
+                running = false;
+                lapFrozen = false;
+            }
+            else
             {
                 startedUs = esp_timer_get_time();
                 running = true;
             }
             break;
         case 1:
-            accumulatedUs = elapsedUs();
-            running = false;
-            lapFrozen = false;
-            break;
-        case 2:
             if (running)
             {
                 if (!lapFrozen)
@@ -125,7 +140,7 @@ void handleStopwatchTouch(int x, int y)
                 lapFrozen = !lapFrozen;
             }
             break;
-        case 3:
+        case 2:
             running = false;
             lapFrozen = false;
             accumulatedUs = 0;
@@ -134,6 +149,8 @@ void handleStopwatchTouch(int x, int y)
         }
 
         drawStopwatchTime(true);
+        if (i != 1)
+            drawStartStop();
         return;
     }
 }
