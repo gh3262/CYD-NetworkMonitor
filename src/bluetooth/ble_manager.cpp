@@ -14,6 +14,7 @@ static char advName[16] = "CYD-HID";
 static const unsigned long PAIRING_TIMEOUT_MS = 120000;
 static const uint16_t NO_CONN = 0xFFFF;
 static const uint8_t CONSUMER_REPORT_ID = 1;
+static const uint8_t KEYBOARD_REPORT_ID = 2;
 
 static volatile BtState btState = BT_DISCONNECTED;
 static volatile bool initialized = false;
@@ -28,6 +29,7 @@ static NimBLEServer *server = nullptr;
 static NimBLEAdvertising *advertising = nullptr;
 static NimBLEHIDDevice *hidDevice = nullptr;
 static NimBLECharacteristic *consumerInputReport = nullptr;
+static NimBLECharacteristic *keyboardInputReport = nullptr;
 
 static uint8_t hidReportMap[] = {
     0x05, 0x0C,       // Usage Page (Consumer)
@@ -47,7 +49,31 @@ static uint8_t hidReportMap[] = {
     0x75, 0x03,       // Report Size (3)
     0x95, 0x01,       // Report Count (1)
     0x81, 0x03,       // Input (Constant, Variable, Absolute)
-    0xC0              // End Collection
+    0xC0,            // End Collection
+
+    0x05, 0x01,      // Usage Page (Generic Desktop)
+    0x09, 0x06,      // Usage (Keyboard)
+    0xA1, 0x01,      // Collection (Application)
+    0x85, KEYBOARD_REPORT_ID,
+    0x05, 0x07,      // Usage Page (Keyboard)
+    0x19, 0xE0,      // Usage Minimum (Left Control)
+    0x29, 0xE7,      // Usage Maximum (Right GUI)
+    0x15, 0x00,      // Logical Minimum (0)
+    0x25, 0x01,      // Logical Maximum (1)
+    0x75, 0x01,      // Report Size (1)
+    0x95, 0x08,      // Report Count (8)
+    0x81, 0x02,      // Input (Data, Variable, Absolute): modifiers
+    0x75, 0x08,      // Report Size (8)
+    0x95, 0x01,      // Report Count (1)
+    0x81, 0x03,      // Input (Constant): reserved byte
+    0x19, 0x00,      // Usage Minimum (No event)
+    0x29, 0x65,      // Usage Maximum (Keyboard Application)
+    0x15, 0x00,      // Logical Minimum (0)
+    0x25, 0x65,      // Logical Maximum (101)
+    0x75, 0x08,      // Report Size (8)
+    0x95, 0x06,      // Report Count (6)
+    0x81, 0x00,      // Input (Data, Array, Absolute): key codes
+    0xC0             // End Collection
 };
 
 static void setState(BtState next)
@@ -184,6 +210,13 @@ bool bleInit()
         setState(BT_UNAVAILABLE);
         return false;
     }
+    keyboardInputReport = hidDevice->getInputReport(KEYBOARD_REPORT_ID);
+    if (!keyboardInputReport)
+    {
+        Serial.println("BLE: failed to create keyboard input report.");
+        setState(BT_UNAVAILABLE);
+        return false;
+    }
 
     advertising = NimBLEDevice::getAdvertising();
     advertising->setName(advName);
@@ -307,6 +340,23 @@ bool bleSendConsumerKey(BleConsumerKey key)
 bool bleSendVolumeUp()
 {
     return bleSendConsumerKey(BLE_KEY_VOLUME_UP);
+}
+
+bool bleSendKeyboardKey(BleKeyboardKey key, BleKeyboardModifier modifier)
+{
+    if (!initialized || btState != BT_CONNECTED || !keyboardInputReport)
+        return false;
+
+    const uint8_t pressed[8] = {
+        static_cast<uint8_t>(modifier), 0, static_cast<uint8_t>(key), 0, 0, 0, 0, 0
+    };
+    const uint8_t released[8] = {};
+
+    if (!keyboardInputReport->notify(pressed, sizeof(pressed)))
+        return false;
+
+    delay(20);
+    return keyboardInputReport->notify(released, sizeof(released));
 }
 
 bool bleUpdate()

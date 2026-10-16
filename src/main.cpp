@@ -265,6 +265,7 @@ static const ScreenDef screens[] = {
     /* SCREEN_BT_CAMERA   */ { drawBtCameraScreen,   handleBtCameraTouch,   nullptr,                    true  },
     /* SCREEN_BT_CAMERA_SETTINGS */ { drawBtCameraSettingsScreen, handleBtCameraSettingsTouch, nullptr, true },
     /* SCREEN_BT_MEDIA    */ { drawBtMediaScreen,    handleBtMediaTouch,    nullptr,                    true  },
+    /* SCREEN_BT_KB       */ { drawBtKbScreen,       handleBtKbTouch,       nullptr,                    true  },
     };
 
 static_assert(sizeof(screens) / sizeof(screens[0]) == SCREEN_COUNT,

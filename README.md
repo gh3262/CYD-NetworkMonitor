@@ -10,6 +10,7 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 | BLE pairing, bonding, reconnect (NimBLE) | Working, verified with a phone |
 | BLE HID consumer control | Implemented; camera shutter support depends on the phone and app |
 | BLE HID media control | Working, verified with an Android phone; track skip support can vary by app |
+| BLE HID keyboard control | Implemented; device/app behavior needs hardware verification |
 
 ## New Features
 
@@ -37,6 +38,14 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 - BT LE management screen
 - BT HID application layer
 
+### Bluetooth HID Keyboard Control
+
+- KB is the third button on the Bluetooth HID page
+- Volume Up, Volume Down, Tab, Left Arrow, Right Arrow, Page Up, and Page Down
+- All (Ctrl-A), Copy (Ctrl-C), and Paste (Ctrl-V)
+- One press and release per tap, with a click on successful send
+- Live connection status; see [Keyboard Control](#keyboard-control) for pairing notes
+
 ## Existing Features
 
 - WiFi diagnostics
@@ -54,10 +63,11 @@ A touch-screen network monitor and Bluetooth LE tool for the ESP32 "Cheap Yellow
 - **System**: free heap, minimum heap, sketch size, uptime, and the device's WiFi MAC address, with a link to Tools.
 - **Tools**: gateway and internet ping with green/yellow/red results, and an NTP button that re-syncs the clock and reports Synced / Sync failed.
 - **BT LE**: Bluetooth connection manager showing status and the paired device, with Pair / Connect / Stop / Cancel / Disconnect and Forget. HID stays disabled until a phone is connected.
-- **BT HID**: function menu with Camera and Media buttons and one disabled `tbd` placeholder for a future HID function.
+- **BT HID**: function menu with Camera, Media, and KB buttons.
 - **BT Camera**: sends a Volume Up consumer-control report for a single shot, after a configurable countdown, or as a configurable shot series. Countdown and shot progress are shown full-screen.
 - **Camera Settings**: adjusts Delay Seconds, Nbr Shots, and Time Between from 1 to 30. SET applies the values to BT Camera; Reset restores the editor to 5 / 5 / 2. Values are kept until reboot.
 - **Media Control**: Play/Pause, Previous, Next, Volume Up, and Volume Down media keys for the connected phone, with a click sound when a key is sent and a live Bluetooth status line below the track buttons.
+- **KB Control**: Volume Up, Volume Down, Tab, All (Ctrl-A), Copy (Ctrl-C), Paste (Ctrl-V), Left Arrow, Right Arrow, Page Up, and Page Down for the connected device, with a click sound when a key is sent and a live Bluetooth status line.
 - **Clock** in the title bar, updated every minute.
 - **Status LED** shows connection state and signal quality, and WiFi reconnects automatically in the background.
 - **Sound** plays non-blocking tones through the speaker amplifier on IO26. Any screen can use it; the camera plays a low 800 Hz tick each second of a countdown and a shutter beep after each successfully sent shutter report. A success sound plays when WiFi connects (at boot or on reconnect) or a phone connects over Bluetooth. An error sound plays when the boot-time WiFi connect fails, when an established WiFi or Bluetooth connection is lost, or when Bluetooth pairing times out, encryption fails, or a second device is rejected. User-requested Bluetooth disconnects are silent.
@@ -78,8 +88,9 @@ Every screen has four buttons along the bottom. Button 4 is **Home** on every sc
 | BT Camera | Back (BT HID) | Settings | | Home |
 | Camera Settings | Back (BT Camera) | SET | Reset | Home |
 | Media Control | Back (BT HID) | | | Home |
+| KB Control | Back (BT HID) | | | Home |
 
-BT HID has three body buttons: **Camera**, **Media**, **tbd**. Camera opens BT Camera, whose body buttons are **Shutter**, **Delay**, and **Series**. Media opens Media Control: a large **Play/Pause** with **Previous** and **Next** below it and a Bluetooth status line under those on the left two-thirds, and **Vol Up** over **Vol Down** on the right third.
+BT HID has three body buttons: **Camera**, **Media**, **KB**. Camera opens BT Camera, whose body buttons are **Shutter**, **Delay**, and **Series**. Media opens Media Control: a large **Play/Pause** with **Previous** and **Next** below it and a Bluetooth status line under those on the left two-thirds, and **Vol Up** over **Vol Down** on the right third. KB opens KB Control with a three-column, four-row grid of 96 x 36 pixel buttons: Vol Up/Vol Down/Tab, All/Copy/Paste, Left/Right/Pg Up, then Pg Down. Connection status occupies the two unused bottom-row cells.
 
 ```
 HOME
@@ -91,6 +102,7 @@ HOME
         +-- Camera
         �   +-- Settings
         +-- Media
+        +-- KB
 +-- System
     +-- Tools
 ```
@@ -108,6 +120,7 @@ Rules:
 - **Pairing** is Just Works with bonding and LE Secure Connections, and times out after 120 s. The device advertises as `CYD-HID-XX` with the generic HID appearance, where `XX` is the last byte of the board's WiFi MAC address in hex (the last two characters of the MAC on the System screen; for MAC `24:6F:28:AB:CD:EF` the name is `CYD-HID-EF`). This keeps multiple boards distinguishable in a phone's Bluetooth list. The name is also printed to the serial monitor at boot.
 - **HID controls.** Open HID, then Camera. The Camera screen sends a Bluetooth Consumer Control Volume Increment report when Shutter is tapped. Shutter flashes green for 300 ms when the report is sent successfully, then returns to red; this confirms sending, not that the phone took a photo. Delay waits the configured number of seconds before sending; Series waits the same delay, then sends the configured number of reports with the configured spacing (default 5 seconds, 5 shots, 2 seconds apart). The countdown and shot number are shown without buttons while a sequence runs. A connected phone and a camera app that treats Volume Up as the shutter are required.
 - **Media keys.** The consumer-control report carries Volume Up, Volume Down, Play/Pause, Next Track, and Previous Track; `bleSendConsumerKey()` presses and releases one. See [Media Control](#media-control).
+- **Keyboard keys.** A separate eight-byte keyboard input report carries Tab, Left/Right Arrow, Page Up/Down, and Ctrl-A/C/V; `bleSendKeyboardKey()` presses and releases a key with an optional modifier (none by default). The release clears both the key and modifier. KB uses the existing consumer-control report for volume. See [Keyboard Control](#keyboard-control).
 - **Device name.** The phone's name is not sent to the CYD, so the Device row shows the bonded Bluetooth address.
 - **Connected** is reported only after the link is encrypted.
 - Connect, authentication and disconnect events are logged to the serial monitor with a `BLE:` prefix.
@@ -155,6 +168,26 @@ Phones save the CYD's list of supported keys (the HID report descriptor) when th
 5. **Test:** wait until BT LE shows Connected, start some audio on the phone, then open **HID > Media** and press Play/Pause.
 
 If the keys still don't work, restart the phone and repeat steps 1–4. The same steps fix a camera shutter that stops working after a firmware update.
+
+## Keyboard Control
+
+Open **Home > BT LE > HID > KB** while connected to a BLE host.
+
+| Button | Action |
+|---|---|
+| Volume Up / Volume Down | Raises / lowers the host's volume using consumer-control keys |
+| Tab | Sends Tab (usually advances focus) |
+| All | Sends Ctrl-A (select all) |
+| Copy | Sends Ctrl-C (copy selection) |
+| Paste | Sends Ctrl-V (paste clipboard) |
+| Left Arrow / Right Arrow | Sends the corresponding arrow key |
+| Page Up / Page Down | Sends the corresponding page navigation key |
+
+Each tap sends one press followed by a release. A click confirms successful sending, not that the host acted on the key. Failed sends are logged to the serial monitor without a click. Connection status updates live; Back returns to BT HID and Home returns to Home.
+
+All, Copy, and Paste send Ctrl shortcuts, not Command shortcuts. The host/app must support them and have the intended field focused. Adding these shortcuts does not change the keyboard report descriptor, so devices already paired with KB-capable firmware do not need to re-pair for this update.
+
+**After upgrading from firmware without KB, forget the pairing on both the CYD and the host, then pair again.** The HID descriptor now includes a keyboard report, and hosts may cache the old descriptor. Follow the [re-pair steps](#if-the-media-buttons-dont-work-the-first-time), then test KB in an app with a text field or scrollable document. Key behavior depends on the host, app, and current focus; mobile hosts may hide the on-screen keyboard while a Bluetooth keyboard is connected.
 
 ## Sound
 
@@ -215,6 +248,7 @@ src/
     bt_camera_screen.cpp
     bt_camera_settings_screen.cpp
     bt_media_screen.cpp
+    bt_kb_screen.cpp
 ```
 
 Each screen file provides `draw*`, `enter*` and `handle*Touch` functions. `main.cpp` holds a table with one entry per screen, so adding a screen means adding an enum value, a source file and one table row.
@@ -230,6 +264,6 @@ Each screen file provides `draw*`, `enter*` and `handle*Touch` functions. `main.
 
 ## Roadmap
 
-- HID keyboard and mouse reports
+- Additional HID keyboard keys and mouse reports
 - MQTT and Adafruit IO integration
 - Additional diagnostics

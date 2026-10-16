@@ -153,4 +153,6 @@ void updateBtLe()
         drawCurrentScreen();
     else if (state.currentScreen == SCREEN_BT_MEDIA)
         refreshBtMediaStatus();
+    else if (state.currentScreen == SCREEN_BT_KB)
+        refreshBtKbStatus();
 }

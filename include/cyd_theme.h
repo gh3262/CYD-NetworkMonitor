@@ -46,7 +46,7 @@
 
 // Touch handling
 #define TOUCH_MIN_PRESSURE   200
-#define TOUCH_RELEASE_MS      60   // finger must be up this long before a new press counts
+#define TOUCH_RELEASE_MS      90   // finger must be up this long before a new press counts
 
 // ====================================================
 // Buttons

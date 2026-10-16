@@ -28,53 +28,7 @@ static const int STATUS_H = NAV_Y - STATUS_Y - 2;
 
 void refreshBtMediaStatus()
 {
-    const char *status = "Disconnected";
-    uint16_t color = COLOR_ERROR;
-
-    if (!bleInitialized())
-    {
-        status = "Starting BLE";
-        color = COLOR_WARNING;
-    }
-    else
-    {
-        switch (bleState())
-        {
-        case BT_CONNECTED:
-            status = "Connected";
-            color = COLOR_OK;
-            break;
-        case BT_ADVERTISING:
-            status = "Reconnecting...";
-            color = COLOR_WARNING;
-            break;
-        case BT_PAIRING:
-            status = "Pairing...";
-            color = COLOR_WARNING;
-            break;
-        case BT_UNAVAILABLE:
-            status = "BT Unavailable";
-            break;
-        default:
-            break;
-        }
-    }
-
-    gfx->fillRect(STATUS_X, STATUS_Y, STATUS_W, STATUS_H, COLOR_BACKGROUND);
-    gfx->setFont(FONT_SANS_SMALL);
-    // Custom GFX fonts are multiplied by text size; other helpers leave it at 2.
-    gfx->setTextSize(1);
-
-    int16_t x1, y1;
-    uint16_t w, h;
-    gfx->getTextBounds(status, 0, 0, &x1, &y1, &w, &h);
-    gfx->setTextColor(color);
-    // Fixed baseline so strings with descenders don't shift vertically.
-    gfx->setCursor(STATUS_X + (STATUS_W - (int)w) / 2 - x1, STATUS_Y + 19);
-    gfx->print(status);
-
-    setDefaultFont();
-    gfx->setTextSize(2);
+    refreshBtHidStatus(STATUS_X, STATUS_Y, STATUS_W, STATUS_H);
 }
 
 void drawBtMediaScreen()

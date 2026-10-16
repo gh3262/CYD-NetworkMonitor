@@ -23,6 +23,7 @@ enum Screen
     SCREEN_BT_CAMERA,
     SCREEN_BT_CAMERA_SETTINGS,
     SCREEN_BT_MEDIA,
+    SCREEN_BT_KB,
     SCREEN_COUNT   // keep last
 };
 
@@ -111,6 +112,7 @@ void handleBtLeTouch(int x, int y);
 void drawBtHidScreen();
 void enterBtHidScreen();
 void handleBtHidTouch(int x, int y);
+void refreshBtHidStatus(int x, int y, int w, int h);
 
 // bt_camera_screen.cpp
 void drawBtCameraScreen();
@@ -131,6 +133,12 @@ void drawBtMediaScreen();
 void enterBtMediaScreen();
 void handleBtMediaTouch(int x, int y);
 void refreshBtMediaStatus();
+
+// bt_kb_screen.cpp
+void drawBtKbScreen();
+void enterBtKbScreen();
+void handleBtKbTouch(int x, int y);
+void refreshBtKbStatus();
 
 // Background jobs: each start*() returns at once, and
 // updateBackgroundJobs() (called from loop) redraws when one finishes
